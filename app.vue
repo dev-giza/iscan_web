@@ -1,0 +1,26 @@
+<template>
+  <div class="app-container">
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
+    <BottomNav />
+  </div>
+</template>
+
+<script setup>
+useHead({
+  meta: [
+    { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover' },
+    { name: 'apple-mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }
+  ]
+})
+</script>
+
+<style>
+.app-container {
+  min-height: 100vh;
+  padding-bottom: 60px;
+  /* Space for bottom nav */
+}
+</style>
