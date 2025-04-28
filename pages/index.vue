@@ -7,9 +7,9 @@
             <div class="scan-overlay">
                 <div class="scan-frame"></div>
             </div>
-            <button @click="startScanning" :disabled="isScanning" class="scan-button">
-                {{ isScanning ? 'Сканирование...' : 'Начать сканирование' }}
-            </button>
+            <div class="scan-hint" v-if="isScanning">
+                Наведите камеру на штрих-код
+            </div>
         </div>
 
         <div class="controls">
@@ -20,11 +20,12 @@
 
         <div v-if="error" class="error-message">
             {{ error }}
+            <button @click="retryScanning" class="retry-button">Повторить</button>
         </div>
 
         <LoadingOverlay v-if="loadingText" :text="loadingText" />
         <ScanModal ref="modalRef" />
-        <AddProductModal ref="addProductModalRef" :barcode="currentBarcode" />
+        <AddProductModal ref="addProductModalRef" :barcode="currentBarcode" @productAdded="handleProductAdded" />
     </div>
 </template>
 
@@ -168,6 +169,21 @@ const stopScanning = () => {
     Quagga.stop()
 }
 
+const retryScanning = () => {
+    error.value = ''
+    startScanning()
+}
+
+const handleProductAdded = (productData: any) => {
+    console.log('Product added successfully:', productData);
+    // Показываем модальное окно с деталями продукта
+    modalRef.value?.open();
+}
+
+onMounted(() => {
+    startScanning()
+})
+
 onUnmounted(() => {
     stopScanning()
 })
@@ -233,26 +249,18 @@ onUnmounted(() => {
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
 }
 
-.scan-button {
+.scan-hint {
     position: absolute;
-    bottom: 40px;
+    bottom: 20%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    padding: 15px 30px;
-    border-radius: 25px;
-    font-size: 16px;
-    font-weight: 500;
-    color: #000;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    z-index: 10;
-}
-
-.scan-button:disabled {
-    background: rgba(255, 255, 255, 0.5);
-    cursor: not-allowed;
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px 20px;
+    border-radius: 20px;
+    white-space: nowrap;
 }
 
 .controls {
@@ -290,5 +298,23 @@ onUnmounted(() => {
     max-width: 90%;
     text-align: center;
     z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.retry-button {
+    background: white;
+    color: red;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.retry-button:hover {
+    background: #f0f0f0;
 }
 </style>

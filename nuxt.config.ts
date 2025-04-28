@@ -10,16 +10,6 @@ export default defineNuxtConfig({
     },
   },
 
-  nitro: {
-    devProxy: {
-      "/api": {
-        target: "https://iscan.store",
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-
   devServer: {
     https: true,
   },

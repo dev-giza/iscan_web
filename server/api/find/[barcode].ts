@@ -1,6 +1,8 @@
 import axios from "axios";
 import https from "https";
 
+const VALID_BARCODE_LENGTHS = [8, 12, 13, 14];
+
 export default defineEventHandler(async (event) => {
   const barcode = getRouterParam(event, "barcode");
 
@@ -8,6 +10,24 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       message: "Barcode is required",
+    });
+  }
+
+  // Проверяем, что штрих-код состоит только из цифр
+  if (!/^\d+$/.test(barcode)) {
+    throw createError({
+      statusCode: 400,
+      message: "Barcode must contain only digits",
+    });
+  }
+
+  // Проверяем длину штрих-кода
+  if (!VALID_BARCODE_LENGTHS.includes(barcode.length)) {
+    throw createError({
+      statusCode: 400,
+      message: `Invalid barcode length. Must be one of: ${VALID_BARCODE_LENGTHS.join(
+        ", "
+      )} digits`,
     });
   }
 

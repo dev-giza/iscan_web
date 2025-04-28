@@ -1,7 +1,7 @@
 <template>
     <div v-if="isOpen" class="modal-overlay" @click="close">
         <div class="modal-content" @click.stop>
-            <button class="close-button" @click="close">&times;</button>
+            <button class="close-button" @click="close" :disabled="isLoading">&times;</button>
 
             <div class="add-product-form">
                 <h2>Добавить новый продукт</h2>
@@ -10,30 +10,37 @@
                 <div class="image-upload-section">
                     <div class="image-upload">
                         <h3>Фото продукта</h3>
-                        <label class="upload-area" :class="{ 'has-image': productImage }">
-                            <input type="file" accept="image/*" @change="handleProductImage" />
+                        <label class="upload-area" :class="{ 'has-image': productImage, 'is-loading': isLoading }">
+                            <input type="file" accept="image/*" @change="handleProductImage" :disabled="isLoading" />
                             <div v-if="!productImage" class="upload-placeholder">
                                 <span>Нажмите или перетащите фото</span>
                             </div>
                             <img v-else :src="productImage" alt="Preview" class="image-preview" />
+                            <div v-if="isLoading" class="loading-overlay">
+                                <div class="loading-spinner"></div>
+                            </div>
                         </label>
                     </div>
 
                     <div class="image-upload">
                         <h3>Фото состава</h3>
-                        <label class="upload-area" :class="{ 'has-image': ingredientsImage }">
-                            <input type="file" accept="image/*" @change="handleIngredientsImage" />
+                        <label class="upload-area" :class="{ 'has-image': ingredientsImage, 'is-loading': isLoading }">
+                            <input type="file" accept="image/*" @change="handleIngredientsImage"
+                                :disabled="isLoading" />
                             <div v-if="!ingredientsImage" class="upload-placeholder">
                                 <span>Нажмите или перетащите фото</span>
                             </div>
                             <img v-else :src="ingredientsImage" alt="Preview" class="image-preview" />
+                            <div v-if="isLoading" class="loading-overlay">
+                                <div class="loading-spinner"></div>
+                            </div>
                         </label>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button class="submit-button" @click="submitImages" :disabled="!canSubmit">
-                        Отправить
+                    <button class="submit-button" @click="submitImages" :disabled="!canSubmit || isLoading">
+                        {{ isLoading ? 'Отправка...' : 'Отправить' }}
                     </button>
                 </div>
             </div>
@@ -43,16 +50,21 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useScanStore } from '~/stores/scan'
 
 const props = defineProps<{
     barcode: string
 }>()
 
+const emit = defineEmits(['productAdded'])
+const store = useScanStore()
+
 const isOpen = ref(false)
+const isLoading = ref(false)
 const productImage = ref<string | null>(null)
 const ingredientsImage = ref<string | null>(null)
 
-const canSubmit = computed(() => productImage.value && ingredientsImage.value)
+const canSubmit = computed(() => productImage.value && ingredientsImage.value && !isLoading.value)
 
 const handleProductImage = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0]
@@ -77,14 +89,52 @@ const handleIngredientsImage = (event: Event) => {
 }
 
 const submitImages = async () => {
+    if (!productImage.value || !ingredientsImage.value) return;
+
+    isLoading.value = true;
     try {
-        // Здесь будет отправка изображений на сервер
-        console.log('Submitting images for barcode:', props.barcode)
-        console.log('Product image:', productImage.value)
-        console.log('Ingredients image:', ingredientsImage.value)
-        close()
+        // Отправляем полные base64 строки
+        const images = [
+            productImage.value,
+            ingredientsImage.value
+        ];
+
+        console.log('Sending images to server:', {
+            barcode: props.barcode,
+            imagesCount: images.length,
+            imagesSizes: images.map(img => Math.round(img.length / 1024) + 'KB')
+        });
+
+        const response = await fetch('https://iscan.store/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                barcode: props.barcode,
+                images: images
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Ошибка при отправке изображений');
+        }
+
+        // Получаем данные о продукте из ответа
+        const productData = await response.json();
+        console.log('Received product data:', productData);
+
+        // Сохраняем данные в store
+        store.setCurrentScan(productData);
+        emit('productAdded', productData);
+        close();
+
     } catch (error) {
-        console.error('Error submitting images:', error)
+        console.error('Error submitting images:', error);
+        alert('Произошла ошибка при отправке изображений. Пожалуйста, попробуйте еще раз.');
+    } finally {
+        isLoading.value = false;
     }
 }
 
@@ -93,6 +143,7 @@ const open = () => {
 }
 
 const close = () => {
+    if (isLoading.value) return;
     isOpen.value = false
     productImage.value = null
     ingredientsImage.value = null
@@ -215,10 +266,16 @@ defineExpose({
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
+    padding: 12px 24px;
+    border-radius: 6px;
     font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.submit-button:hover:not(:disabled) {
+    background-color: #0056b3;
 }
 
 .submit-button:disabled {
@@ -226,12 +283,48 @@ defineExpose({
     cursor: not-allowed;
 }
 
-.submit-button:not(:disabled):hover {
-    background-color: #0056b3;
-}
-
 .upload-area.has-image {
     border-style: solid;
     border-color: #28a745;
+}
+
+.upload-area.is-loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.form-actions {
+    margin-top: 20px;
 }
 </style>
