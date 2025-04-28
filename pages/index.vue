@@ -1,14 +1,18 @@
 <template>
     <div class="scanner-page">
         <div class="camera-container">
-            <video ref="video" autoplay playsinline></video>
-            <canvas ref="canvas" style="display: none;"></canvas>
+            <div id="interactive" class="viewport">
+                <video ref="video" autoplay playsinline></video>
+            </div>
+            <div class="scan-overlay">
+                <div class="scan-frame"></div>
+            </div>
+            <button @click="startScanning" :disabled="isScanning" class="scan-button">
+                {{ isScanning ? 'Сканирование...' : 'Начать сканирование' }}
+            </button>
         </div>
 
         <div class="controls">
-            <button @click="startScanning" :disabled="isScanning">
-                {{ isScanning ? 'Сканирование...' : 'Начать сканирование' }}
-            </button>
             <NuxtLink to="/history" class="history-link">
                 История сканирований
             </NuxtLink>
@@ -18,6 +22,7 @@
             {{ error }}
         </div>
 
+        <LoadingOverlay v-if="loadingText" :text="loadingText" />
         <ScanModal ref="modalRef" />
         <AddProductModal ref="addProductModalRef" :barcode="currentBarcode" />
     </div>
@@ -27,15 +32,16 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useScanStore } from '~/stores/scan'
 import Quagga from '@ericblade/quagga2'
+import LoadingOverlay from '~/components/LoadingOverlay.vue'
 
-const video = ref<HTMLVideoElement | null>(null)
-const canvas = ref<HTMLCanvasElement | null>(null)
+const video = ref(null)
 const isScanning = ref(false)
 const error = ref('')
 const modalRef = ref()
 const addProductModalRef = ref()
 const isProcessingBarcode = ref(false)
 const currentBarcode = ref('')
+const loadingText = ref('')
 
 const store = useScanStore()
 
@@ -46,96 +52,121 @@ const startScanning = async () => {
         isProcessingBarcode.value = false
         currentBarcode.value = ''
 
-        // Запрашиваем доступ к камере
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "environment",
-                width: { min: 640, ideal: 1280, max: 1920 },
-                height: { min: 480, ideal: 720, max: 1080 }
-            }
-        });
-
-        // Подключаем видеопоток
-        if (video.value) {
-            video.value.srcObject = stream;
-            await new Promise((resolve) => {
-                video.value!.onloadedmetadata = resolve;
-            });
-        }
-
         // Инициализируем Quagga
         Quagga.init({
             inputStream: {
                 name: "Live",
                 type: "LiveStream",
-                target: video.value,
+                target: document.querySelector("#interactive"),
                 constraints: {
-                    facingMode: "environment"
-                }
+                    facingMode: "environment",
+                    aspectRatio: { min: 1, max: 2 },
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 }
+                },
+                area: { // Определяем область сканирования
+                    top: "25%",
+                    right: "15%",
+                    left: "15%",
+                    bottom: "25%",
+                },
             },
             decoder: {
-                readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader"]
-            }
-        }, (err) => {
-            if (err) {
-                console.error('Quagga initialization error:', err);
-                error.value = 'Ошибка инициализации сканера';
-                isScanning.value = false;
-                return;
-            }
-
-            console.log('Quagga initialized successfully');
-            Quagga.start();
-        });
-
-        Quagga.onDetected(async (result) => {
-            const barcode = result.codeResult.code;
-            if (barcode && !isProcessingBarcode.value) {
-                isProcessingBarcode.value = true;
-                currentBarcode.value = barcode;
-                try {
-                    const response = await $fetch(`/api/find/${barcode}`);
-                    if (response.score === null && response.nutrition === null) {
-                        addProductModalRef.value?.open();
-                    } else {
-                        store.setCurrentScan({
-                            barcode: response.barcode,
-                            name: response.product_name,
-                            brand: response.manufacturer || undefined,
-                            image: response.image_front || undefined
-                        });
-                        modalRef.value?.open();
+                readers: [
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_128_reader",
+                    "code_39_reader",
+                    "upc_reader",
+                    "upc_e_reader"
+                ],
+                debug: {
+                    drawBoundingBox: true,
+                    showPattern: true,
+                    showCanvas: true
+                },
+                multiple: false,
+                frequency: 10,
+                patternTimeout: 100
+            },
+            locate: true,
+            locator: {
+                halfSample: true,
+                patchSize: "medium",
+                debug: {
+                    showCanvas: true,
+                    showPatches: true,
+                    showFoundPatches: true,
+                    showSkeleton: true,
+                    showLabels: true,
+                    showPatchLabels: true,
+                    showRemainingPatchLabels: true,
+                    boxFromPatches: {
+                        showTransformed: true,
+                        showTransformedBox: true,
+                        showBB: true
                     }
-                    stopScanning();
-                } catch (err) {
-                    console.error('Error fetching product:', err);
-                    error.value = 'Ошибка при получении данных о продукте';
-                    isProcessingBarcode.value = false;
                 }
             }
-        });
+        }, function (err) {
+            if (err) {
+                console.error('Quagga initialization error:', err)
+                error.value = 'Ошибка инициализации сканера'
+                isScanning.value = false
+                return
+            }
+
+            console.log('Quagga initialized successfully')
+            Quagga.start()
+        })
+
+        // Добавляем обработчик результатов
+        Quagga.onDetected(async (result) => {
+            const barcode = result.codeResult.code
+            if (barcode && !isProcessingBarcode.value) {
+                console.log('Barcode detected:', barcode)
+
+                // Проверяем длину баркода
+                const validLengths = [8, 12, 13] // EAN-8, UPC-A, EAN-13
+                if (!validLengths.includes(barcode.length)) {
+                    console.log('Invalid barcode length:', barcode.length)
+                    return
+                }
+
+                isProcessingBarcode.value = true
+                currentBarcode.value = barcode
+                loadingText.value = 'Поиск информации о продукте...'
+                try {
+                    const response = await $fetch(`/api/find/${barcode}`)
+                    if (response.score === null && response.nutrition === null) {
+                        addProductModalRef.value?.open()
+                    } else {
+                        store.setCurrentScan(response)
+                        modalRef.value?.open()
+                    }
+                    stopScanning()
+                } catch (err) {
+                    console.error('Error fetching product:', err)
+                    error.value = 'Ошибка при получении данных о продукте'
+                    isProcessingBarcode.value = false
+                } finally {
+                    loadingText.value = ''
+                }
+            }
+        })
 
     } catch (err) {
-        console.error('Camera access error:', err);
-        error.value = 'Ошибка доступа к камере. Пожалуйста, убедитесь, что вы дали разрешение на использование камеры.';
-        isScanning.value = false;
+        console.error('Scanner initialization error:', err)
+        error.value = err instanceof Error ? err.message : 'Ошибка доступа к камере'
+        isScanning.value = false
     }
-};
+}
 
 const stopScanning = () => {
-    isScanning.value = false;
-    isProcessingBarcode.value = false;
-
-    // Останавливаем видеопоток
-    if (video.value?.srcObject) {
-        const stream = video.value.srcObject as MediaStream;
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
-    }
-
-    // Останавливаем Quagga
-    Quagga.stop();
-};
+    isScanning.value = false
+    isProcessingBarcode.value = false
+    Quagga.stop()
+}
 
 onUnmounted(() => {
     stopScanning()
@@ -144,39 +175,84 @@ onUnmounted(() => {
 
 <style scoped>
 .scanner-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    min-height: 100vh;
 }
 
 .camera-container {
-    width: 100%;
-    max-width: 640px;
-    margin: 0 auto 20px;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
     position: relative;
-    aspect-ratio: 4/3;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
-.camera-container video {
+.viewport {
+    width: 100%;
+    height: 100%;
+}
+
+.viewport>video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    position: absolute;
-    top: 0;
-    left: 0;
 }
 
-.drawingBuffer {
+.viewport>canvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+}
+
+.scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.scan-frame {
+    width: 80%;
+    max-width: 300px;
+    aspect-ratio: 1;
+    border: 2px solid #fff;
+    border-radius: 20px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+.scan-button {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.scan-button:disabled {
+    background: rgba(255, 255, 255, 0.5);
+    cursor: not-allowed;
 }
 
 .controls {
@@ -185,26 +261,6 @@ onUnmounted(() => {
     gap: 10px;
     width: 100%;
     max-width: 300px;
-}
-
-button {
-    padding: 12px 24px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.2s;
-}
-
-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-button:not(:disabled):hover {
-    background-color: #0056b3;
 }
 
 .history-link {
@@ -223,12 +279,16 @@ button:not(:disabled):hover {
 }
 
 .error-message {
-    margin-top: 20px;
-    padding: 10px;
-    color: #dc3545;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 4px;
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    max-width: 90%;
     text-align: center;
+    z-index: 10;
 }
 </style>
