@@ -56,7 +56,7 @@ const props = defineProps<{
     barcode: string
 }>()
 
-const emit = defineEmits(['productAdded'])
+const emit = defineEmits(['productAdded', 'close'])
 const store = useScanStore()
 
 const isOpen = ref(false)
@@ -147,6 +147,7 @@ const close = () => {
     isOpen.value = false
     productImage.value = null
     ingredientsImage.value = null
+    emit('close')
 }
 
 defineExpose({

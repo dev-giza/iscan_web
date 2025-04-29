@@ -96,6 +96,7 @@
 import { ref, computed, watch } from 'vue'
 import { useScanStore } from '~/stores/scan'
 
+const emit = defineEmits(['close'])
 const store = useScanStore()
 const isOpen = ref(false)
 
@@ -121,6 +122,7 @@ const open = () => {
 const close = () => {
     isOpen.value = false
     store.setCurrentScan(null)
+    emit('close')
 }
 
 defineExpose({
