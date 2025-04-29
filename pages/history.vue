@@ -11,7 +11,8 @@
         <div v-else class="history-list">
             <div v-for="scan in history" :key="scan.barcode" class="history-item" @click="showDetails(scan)">
                 <div class="product-image" v-if="scan.image_front">
-                    <img :src="scan.image_front" :alt="scan.product_name">
+                    <img :src="scan.image_front.startsWith('/static/') ? `https://iscan.store${scan.image_front}` : scan.image_front"
+                        :alt="scan.product_name">
                 </div>
                 <div class="product-info">
                     <h3>{{ scan.product_name }}</h3>

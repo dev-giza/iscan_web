@@ -6,7 +6,8 @@
             <div v-if="currentScan" class="scan-result">
                 <div class="product-header">
                     <div class="product-image" v-if="currentScan?.image_front">
-                        <img :src="currentScan.image_front" :alt="currentScan.product_name">
+                        <img :src="currentScan.image_front.startsWith('/static/') ? `https://iscan.store${currentScan.image_front}` : currentScan.image_front"
+                            :alt="currentScan.product_name">
                     </div>
 
                     <div class="product-info">
