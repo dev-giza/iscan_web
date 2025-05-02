@@ -66,25 +66,43 @@ const ingredientsImage = ref<string | null>(null)
 
 const canSubmit = computed(() => productImage.value && ingredientsImage.value && !isLoading.value)
 
-const handleProductImage = (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
-    if (file) {
-        const reader = new FileReader()
+function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        const reader = new FileReader();
         reader.onload = (e) => {
-            productImage.value = e.target?.result as string
-        }
-        reader.readAsDataURL(file)
+            img.src = e.target?.result as string;
+        };
+        img.onload = () => {
+            const scale = Math.min(1, maxWidth / img.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                reject(new Error('Не удалось получить 2D контекст canvas'));
+                return;
+            }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = reject;
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+const handleProductImage = async (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+        productImage.value = await compressImage(file, 1200, 0.85);
     }
 }
 
-const handleIngredientsImage = (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0]
+const handleIngredientsImage = async (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            ingredientsImage.value = e.target?.result as string
-        }
-        reader.readAsDataURL(file)
+        ingredientsImage.value = await compressImage(file, 1200, 0.85);
     }
 }
 

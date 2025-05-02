@@ -74,7 +74,7 @@
                         <div class="harmful-title">{{ component.name }}</div>
                         <div class="harmful-effect">{{ component.effect }}</div>
                         <div v-if="component.recommendation" class="harmful-recommend">{{ component.recommendation
-                            }}</div>
+                        }}</div>
                     </div>
                 </div>
                 <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
