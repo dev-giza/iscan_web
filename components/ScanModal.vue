@@ -21,6 +21,14 @@
                             <i class="fa-solid fa-industry"></i> {{ currentScan.manufacturer }}
                         </span>
                     </div>
+                    <div class="product-card-status">
+                        <span class="score-dot"
+                            :class="getScoreDotClass(typeof currentScan?.score === 'number' ? currentScan.score : undefined)"></span>
+                        <span class="health-score-numeric">{{ typeof currentScan?.score === 'number' ? currentScan.score
+                            : '—' }}/100</span>
+                        <span class="health-score-value">{{ getScoreLabel(typeof currentScan?.score === 'number' ?
+                            currentScan.score : undefined) }}</span>
+                    </div>
                     <div class="product-card-params-grid">
                         <div class="param-cell param-calories">
                             <i class="fa-solid fa-fire param-icon-calories"></i>
@@ -42,18 +50,6 @@
                             <div class="param-value">{{ currentScan?.nutrition?.carbohydrates ?? '—' }}</div>
                             <div class="param-label">Углеводы</div>
                         </div>
-                    </div>
-                    <div class="product-card-status">
-                        <span class="health-score-label">Оценка:</span>
-                        <div class="health-score-bar">
-                            <div class="health-score-bar-inner"
-                                :style="{ width: healthScoreBarWidth, transition: 'width 0.7s cubic-bezier(.4,0,.2,1)' }">
-                            </div>
-                        </div>
-                        <span class="health-score-numeric">{{ typeof currentScan?.score === 'number' ? currentScan.score
-                            : '—' }}/100</span>
-                        <span class="health-score-value">{{ getScoreLabel(typeof currentScan?.score === 'number' ?
-                            currentScan.score : undefined) }}</span>
                     </div>
                     <div v-if="currentScan?.extra?.explanation_score" class="score-explanation-block">
                         <i class="fa-regular fa-circle-question"></i>
@@ -164,6 +160,44 @@ function formatRelativeDate(timestamp?: number): string {
 const open = () => { isOpen.value = true }
 const close = () => { isOpen.value = false; store.setCurrentScan(null); emit('close') }
 defineExpose({ open, close })
+
+const positives = computed(() => [
+    currentScan.value?.nutrition?.proteins ? {
+        icon: 'fa-solid fa-drumstick-bite',
+        title: 'Белки',
+        desc: 'Содержит белок',
+        value: currentScan.value.nutrition.proteins + 'г'
+    } : null,
+    currentScan.value?.nutrition?.calories ? {
+        icon: 'fa-solid fa-fire',
+        title: 'Калории',
+        desc: 'Низкая калорийность',
+        value: currentScan.value.nutrition.calories + ' ккал'
+    } : null
+].filter(Boolean))
+
+const negatives = computed(() => [
+    (currentScan.value?.nutrition && 'sugar' in currentScan.value.nutrition && currentScan.value.nutrition.sugar) ? {
+        icon: 'fa-solid fa-cube',
+        title: 'Сахар',
+        desc: 'Содержит сахар',
+        value: currentScan.value.nutrition.sugar + 'г'
+    } : null,
+    (currentScan.value?.nutrition && 'sodium' in currentScan.value.nutrition && currentScan.value.nutrition.sodium) ? {
+        icon: 'fa-solid fa-salt-shaker',
+        title: 'Соль',
+        desc: 'Содержит соль',
+        value: currentScan.value.nutrition.sodium + 'мг'
+    } : null
+].filter(Boolean))
+
+function getScoreDotClass(score: number | undefined) {
+    if (typeof score !== 'number') return 'dot-unknown';
+    if (score <= 25) return 'dot-bad';
+    if (score <= 50) return 'dot-medium';
+    if (score <= 75) return 'dot-good';
+    return 'dot-excellent';
+}
 </script>
 
 <style scoped>
@@ -182,13 +216,13 @@ defineExpose({ open, close })
     padding: 32px 8px 32px 8px;
     z-index: 1000;
     overflow-y: auto;
-    animation: modal-fade-in 0.25s cubic-bezier(.4, 0, .2, 1);
+    animation: modal-fade-in 0.35s cubic-bezier(.4, 0, .2, 1);
 }
 
 @keyframes modal-fade-in {
     from {
         opacity: 0;
-        transform: translateY(40px);
+        transform: translateY(40px) scale(0.98);
     }
 
     to {
@@ -199,15 +233,15 @@ defineExpose({ open, close })
 
 .modal-card {
     background: linear-gradient(135deg, #f8fafc 0%, #f3f6ff 100%);
-    border-radius: 28px;
-    box-shadow: 0 12px 48px rgba(60, 60, 120, 0.18), 0 2px 8px rgba(60, 60, 120, 0.08);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(60, 60, 120, 0.16), 0 2px 8px rgba(60, 60, 120, 0.08);
     max-width: 420px;
     width: 100%;
     margin: auto;
     position: relative;
     padding: 0 0 32px 0;
     overflow: hidden;
-    animation: modal-fade-in 0.25s cubic-bezier(.4, 0, .2, 1);
+    animation: modal-fade-in 0.35s cubic-bezier(.4, 0, .2, 1);
 }
 
 .animated-modal {
@@ -257,24 +291,38 @@ defineExpose({ open, close })
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0 24px;
+    padding: 0 18px;
+    animation: fade-in-card 0.6s cubic-bezier(.4, 0, .2, 1);
+}
+
+@keyframes fade-in-card {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .product-card-image-wrap {
     width: 100%;
     display: flex;
     justify-content: center;
-    margin-top: 32px;
-    margin-bottom: 18px;
+    margin-top: 28px;
+    margin-bottom: 14px;
 }
 
 .product-card-image {
-    width: 160px;
-    height: 160px;
+    width: 120px;
+    height: 120px;
     object-fit: cover;
-    border-radius: 24px;
+    border-radius: 18px;
     box-shadow: 0 4px 24px rgba(60, 60, 120, 0.10);
     background: #f6f8fa;
+    animation: fade-in-card 0.7s cubic-bezier(.4, 0, .2, 1);
 }
 
 .product-card-content {
@@ -282,16 +330,17 @@ defineExpose({ open, close })
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 22px;
+    gap: 14px;
 }
 
 .product-card-title {
-    font-size: 1.55rem;
+    font-size: 1.35rem;
     font-weight: 900;
     color: #23233a;
     text-align: center;
-    margin: 0 0 4px 0;
-    letter-spacing: 0.2px;
+    margin: 0 0 2px 0;
+    letter-spacing: 0.01em;
+    animation: fade-in-card 0.7s cubic-bezier(.4, 0, .2, 1);
 }
 
 .product-card-date {
@@ -303,171 +352,146 @@ defineExpose({ open, close })
     gap: 6px;
 }
 
-.product-card-date i {
-    margin-right: 6px;
-    font-size: 1em;
-    color: #b0b0c3;
-}
-
 .product-card-meta {
     display: flex;
-    gap: 18px;
+    gap: 14px;
     justify-content: center;
     margin: 4px 0 8px 0;
     color: #b0b0c3;
     font-size: 0.98rem;
 }
 
-.product-card-meta .meta-item i {
-    margin-right: 4px;
-    color: #b0b0c3;
+.product-card-status {
+    width: 100%;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    animation: fade-in-card 0.8s cubic-bezier(.4, 0, .2, 1);
+}
+
+.score-dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px 2px rgba(76, 193, 110, 0.12);
+    transition: box-shadow 0.3s;
+}
+
+.dot-bad {
+    background: #e74c3c;
+    box-shadow: 0 0 8px 2px #e74c3c33;
+}
+
+.dot-medium {
+    background: #ffb300;
+    box-shadow: 0 0 8px 2px #ffb30033;
+}
+
+.dot-good {
+    background: #4ec16e;
+    box-shadow: 0 0 8px 2px #4ec16e33;
+}
+
+.dot-excellent {
+    background: #2196f3;
+    box-shadow: 0 0 8px 2px #2196f333;
+}
+
+.dot-unknown {
+    background: #bbb;
+}
+
+.health-score-numeric {
+    font-size: 1.22rem;
+    font-weight: 800;
+    color: #23233a;
+    letter-spacing: 0.2px;
+    animation: fade-in-card 0.9s cubic-bezier(.4, 0, .2, 1);
+}
+
+.health-score-value {
+    font-size: 1.01rem;
+    font-weight: 700;
+    color: #888;
+    min-width: 70px;
+    text-align: right;
+    animation: fade-in-card 1s cubic-bezier(.4, 0, .2, 1);
 }
 
 .product-card-params-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px 18px;
+    gap: 12px 14px;
     width: 100%;
-    margin: 12px 0 0 0;
+    margin: 10px 0 0 0;
+    animation: fade-in-card 1.1s cubic-bezier(.4, 0, .2, 1);
 }
 
 .param-cell {
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-radius: 22px;
-    padding: 16px 0 14px 0;
-    box-shadow: 0 2px 10px rgba(60, 60, 120, 0.07);
+    background: linear-gradient(135deg, #f6f8fa 60%, #f3f6fb 100%);
+    border-radius: 16px;
+    padding: 12px 0 10px 0;
+    box-shadow: 0 1px 8px rgba(60, 60, 120, 0.06);
     min-width: 0;
-    transition: box-shadow 0.2s, transform 0.2s, border 0.2s;
-    animation: fade-in 0.5s cubic-bezier(.4, 0, .2, 1);
+    transition: box-shadow 0.2s, transform 0.2s;
+    animation: fade-in-card 1.2s cubic-bezier(.4, 0, .2, 1);
     border: 2px solid transparent;
+    position: relative;
 }
 
 .param-cell:hover {
-    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.13), 0 0 0 4px #e0e7ff;
-    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.13);
+    transform: translateY(-2px) scale(1.03);
     border: 2px solid #e0e7ff;
 }
 
 .param-cell i {
-    transition: transform 0.18s, color 0.18s;
+    background: #fff;
+    border-radius: 50%;
+    padding: 8px;
+    margin-bottom: 2px;
+    font-size: 1.3em;
+    box-shadow: 0 2px 8px rgba(60, 60, 120, 0.08);
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
 }
 
-.param-cell:hover i {
-    transform: scale(1.18);
-    filter: drop-shadow(0 2px 6px rgba(60, 60, 120, 0.10));
-}
-
-.param-cell.param-calories {
+.param-cell.param-calories i {
+    color: #ff9800;
     background: #fff4e0;
 }
 
-.param-cell.param-proteins {
-    background: #ffe6ea;
+.param-cell.param-proteins i {
+    color: #4ec16e;
+    background: #e6fbe9;
 }
 
-.param-cell.param-fats {
+.param-cell.param-fats i {
+    color: #42a5f5;
     background: #e6f0ff;
 }
 
-.param-cell.param-carbs {
+.param-cell.param-carbs i {
+    color: #bdb76b;
     background: #f7f5e6;
 }
 
-.param-cell i.param-icon-calories {
-    color: #ff9800;
-}
-
-.param-cell i.param-icon-proteins {
-    color: #e57373;
-}
-
-.param-cell i.param-icon-fats {
-    color: #42a5f5;
-}
-
-.param-cell i.param-icon-carbs {
-    color: #bdb76b;
-}
-
 .param-value {
-    font-size: 1.22rem;
-    font-weight: 800;
+    font-size: 1.13rem;
+    font-weight: 700;
     color: #23233a;
     margin-bottom: 2px;
-    letter-spacing: 0.5px;
 }
 
 .param-label {
-    font-size: 0.93rem;
-    color: #a0a0b3;
+    font-size: 0.97rem;
+    color: #888;
     font-weight: 500;
-    margin-top: 2px;
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(16px) scale(0.98);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
-.product-card-status {
-    width: 100%;
-    margin-top: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: center;
-}
-
-.health-score-label {
-    color: #b0b0c3;
-    font-size: 1.01rem;
-    font-weight: 600;
-}
-
-.health-score-bar {
-    flex: 1;
-    height: 10px;
-    background: #f2f2f2;
-    border-radius: 6px;
-    overflow: hidden;
-    margin: 0 8px;
-    min-width: 80px;
-    max-width: 160px;
-}
-
-.health-score-bar-inner {
-    height: 100%;
-    background: linear-gradient(90deg, #ff4e50, #ffe066 50%, #4ec16e 100%);
-    border-radius: 6px;
-    transition: width 0.5s cubic-bezier(.4, 0, .2, 1);
-}
-
-.health-score-numeric {
-    font-size: 0.99rem;
-    color: #b0b0c3;
-    font-weight: 700;
-    min-width: 48px;
-    text-align: right;
-    margin-left: 4px;
-    margin-right: 2px;
-    letter-spacing: 0.2px;
-}
-
-.health-score-value {
-    font-size: 1.01rem;
-    font-weight: 700;
-    color: #23233a;
-    min-width: 70px;
-    text-align: right;
 }
 
 .score-explanation-block {
@@ -480,12 +504,7 @@ defineExpose({ open, close })
     color: #666;
     font-size: 0.98rem;
     margin-top: 8px;
-}
-
-.score-explanation-block i {
-    color: #b0b0c3;
-    font-size: 1.1em;
-    margin-top: 2px;
+    animation: fade-in-card 1.3s cubic-bezier(.4, 0, .2, 1);
 }
 
 .info-section {
@@ -498,12 +517,7 @@ defineExpose({ open, close })
     color: #666;
     font-size: 0.98rem;
     margin-top: 10px;
-}
-
-.info-section i {
-    color: #b0b0c3;
-    font-size: 1.1em;
-    margin-top: 2px;
+    animation: fade-in-card 1.4s cubic-bezier(.4, 0, .2, 1);
 }
 
 .harmful-cards,
@@ -512,19 +526,27 @@ defineExpose({ open, close })
     flex-direction: column;
     gap: 10px;
     margin-top: 6px;
+    animation: fade-in-card 1.5s cubic-bezier(.4, 0, .2, 1);
 }
 
 .harmful-card,
 .recommend-card {
-    background: #f6f8fa;
+    background: linear-gradient(135deg, #f6f8fa 60%, #f3f6fb 100%);
     border-radius: 12px;
     padding: 10px 14px;
-    box-shadow: 0 1px 4px rgba(60, 60, 120, 0.04);
+    box-shadow: 0 1px 8px rgba(60, 60, 120, 0.06);
     color: #666;
     font-size: 0.98rem;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.harmful-card:hover,
+.recommend-card:hover {
+    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.13);
+    transform: translateY(-2px) scale(1.03);
 }
 
 .harmful-title {
@@ -572,13 +594,13 @@ defineExpose({ open, close })
     }
 
     .product-card-image {
-        width: 110px;
-        height: 110px;
-        border-radius: 14px;
+        width: 90px;
+        height: 90px;
+        border-radius: 12px;
     }
 
     .product-card-content {
-        gap: 12px;
+        gap: 10px;
     }
 
     .product-card-params-grid {
@@ -586,8 +608,7 @@ defineExpose({ open, close })
     }
 
     .param-cell {
-        padding: 10px 0 8px 0;
-        border-radius: 14px;
+        padding: 8px 0 7px 0;
     }
 
     .harmful-cards,
@@ -601,19 +622,13 @@ defineExpose({ open, close })
         font-size: 0.95rem;
     }
 
-    .health-score-bar {
-        min-width: 50px;
-        max-width: 100px;
+    .health-score-numeric {
+        font-size: 1.01rem;
     }
 
     .health-score-value {
         min-width: 40px;
         font-size: 0.95rem;
-    }
-
-    .health-score-numeric {
-        min-width: 32px;
-        font-size: 0.93rem;
     }
 }
 </style>

@@ -10,25 +10,20 @@
 
         <div v-else class="history-list">
             <div v-for="scan in history" :key="scan.barcode" class="history-item" @click="showDetails(scan)">
-                <div class="product-row">
-                    <div class="product-image" v-if="scan.image_front">
+                <div class="history-row">
+                    <div class="history-img-wrap" v-if="scan.image_front">
                         <img :src="scan.image_front" :alt="scan.product_name">
                     </div>
-                    <div class="product-main-info">
-                        <h3>{{ scan.product_name }}</h3>
-                        <div class="scan-date">
-                            <i class="fa-solid fa-calendar"></i>
-                            Дата: {{ formatRelativeDate(scan.timestamp) }}
-                        </div>
-                    </div>
-                    <div class="status-block">
-                        <div v-if="typeof scan.score === 'number'" class="status-badge"
-                            :class="getScoreClass(scan.score)">
-                            <i :class="getScoreIcon(scan.score)"></i>
-                            <span>{{ getScoreLabel(scan.score) }}</span>
-                        </div>
-                        <div v-else class="status-badge status-unknown">
-                            <i class="fa-solid fa-question-circle"></i> Неизвестно
+                    <div class="history-main-info">
+                        <div class="history-title">{{ scan.product_name }}</div>
+                        <div class="history-brand" v-if="scan.manufacturer">{{ scan.manufacturer }}</div>
+                        <div class="history-status-date">
+                            <span class="status-dot"
+                                :class="getStatusDotClass(typeof scan.score === 'number' ? scan.score : undefined)"></span>
+                            <span class="status-text">{{ getScoreLabel(typeof scan.score === 'number' ? scan.score :
+                                undefined) }}</span>
+                            <span class="history-date"><i class="fa-regular fa-clock"></i> {{
+                                formatRelativeDate(scan.timestamp) }}</span>
                         </div>
                     </div>
                     <button class="delete-btn" @click.stop="deleteFromHistory(scan.barcode)" title="Удалить из истории">
@@ -89,7 +84,8 @@ const getScoreClass = (score: number): string => {
     return 'score-high';
 };
 
-const getScoreLabel = (score: number): string => {
+const getScoreLabel = (score: number | undefined): string => {
+    if (score === undefined) return 'Неизвестно';
     if (score <= 25) return 'Плохое';
     if (score <= 50) return 'Слабое';
     if (score <= 75) return 'Хорошее';
@@ -103,21 +99,29 @@ function getScoreIcon(score: number | undefined) {
     if (cls === 'score-low') return 'fa-solid fa-exclamation-triangle';
     return 'fa-regular fa-question-circle';
 }
+
+function getStatusDotClass(score: number | undefined) {
+    if (typeof score !== 'number') return 'dot-unknown';
+    if (score <= 25) return 'dot-bad';
+    if (score <= 50) return 'dot-medium';
+    if (score <= 75) return 'dot-good';
+    return 'dot-excellent';
+}
 </script>
 
 <style scoped>
 .history-page {
-    padding: 24px;
-    padding-bottom: 80px;
-    max-width: 800px;
+    padding: 8px 0 70px 0;
+    max-width: 600px;
     margin: 0 auto;
 }
 
 .history-page h1 {
     font-size: 2rem;
-    color: #333;
-    margin-bottom: 24px;
-    text-align: center;
+    color: #23233a;
+    margin: 12px 0 18px 16px;
+    text-align: left;
+    font-weight: 900;
 }
 
 .empty-state {
@@ -142,199 +146,140 @@ function getScoreIcon(score: number | undefined) {
 .history-list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-}
-
-@keyframes card-fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(24px) scale(0.98);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-    }
+    gap: 0;
 }
 
 .history-item {
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    gap: 18px;
-    padding: 28px 24px 20px 24px;
-    background: linear-gradient(120deg, #f8fafc 60%, #f3f6fb 100%);
-    border-radius: 20px;
-    box-shadow: 0 4px 24px 0 rgba(60, 60, 120, 0.10), 0 1.5px 4px 0 rgba(60, 60, 120, 0.04);
+    background: #fff;
+    border-bottom: 1px solid #ececec;
+    padding: 0 0 0 0;
     cursor: pointer;
-    transition: box-shadow 0.22s, transform 0.16s;
-    position: relative;
-    min-height: 80px;
-    overflow: hidden;
-    animation: card-fade-in 0.6s cubic-bezier(.4, 0, .2, 1);
+    transition: background 0.18s;
 }
 
-.history-item:hover {
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 12px 40px 0 rgba(60, 60, 120, 0.16), 0 4px 16px 0 rgba(60, 60, 120, 0.10);
+.history-item:active {
+    background: #f6f8fa;
 }
 
-.product-row {
+.history-row {
     display: flex;
     align-items: center;
-    gap: 18px;
-    width: 100%;
+    gap: 10px;
+    padding: 10px 8px 10px 8px;
 }
 
-.product-row i {}
-
-.product-image {
-    width: 64px;
-    height: 64px;
-    flex-shrink: 0;
-    border-radius: 16px;
+.history-img-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
     overflow: hidden;
     background: #f6f8fa;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 6px rgba(60, 60, 120, 0.07);
+    flex-shrink: 0;
 }
 
-.product-image img {
+.history-img-wrap img {
     width: 100%;
     height: 100%;
     object-fit: contain;
 }
 
-.product-main-info {
+.history-main-info {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
 }
 
-.product-main-info h3 {
-    margin: 0;
-    font-size: 1.22rem;
+.history-title {
+    font-size: 1.08rem;
+    font-weight: 700;
     color: #23233a;
-    font-weight: 800;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    letter-spacing: 0.01em;
+    line-height: 1.18;
+    margin-bottom: 0;
+    white-space: normal;
+    word-break: break-word;
 }
 
-.scan-date {
-    font-size: 1.01rem;
-    color: #b0b0c3;
-    margin: 0;
-    font-weight: 600;
+.history-brand {
+    font-size: 0.97rem;
+    color: #888;
+    margin-bottom: 0;
+    line-height: 1.1;
+}
+
+.history-status-date {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    margin-top: 2px;
 }
 
-.scan-date:before {
-    content: '\f073';
-    font-family: 'Font Awesome 5 Free', 'FontAwesome', Arial, sans-serif;
-    font-weight: 900;
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 2px;
+}
+
+.dot-bad {
+    background: #e74c3c;
+}
+
+.dot-medium {
+    background: #ffb300;
+}
+
+.dot-good {
+    background: #4ec16e;
+}
+
+.dot-excellent {
+    background: #2196f3;
+}
+
+.dot-unknown {
+    background: #bbb;
+}
+
+.status-text {
+    font-size: 0.99rem;
+    color: #23233a;
+    font-weight: 500;
+}
+
+.history-date {
+    font-size: 0.97rem;
+    color: #b0b0c3;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.history-date i {
     font-size: 1em;
     color: #b0b0c3;
     margin-right: 2px;
 }
 
-.status-block {
-    min-width: 90px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-}
-
-.status-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: #fff;
-    box-shadow: 0 2px 8px rgba(60, 60, 120, 0.10);
-    border: none;
-    background: #e0e0e0;
-    position: relative;
-    margin-bottom: 0;
-    transition: background 0.2s, box-shadow 0.2s;
-    padding: 0;
-    gap: 0.4em;
-}
-
-.status-badge.score-high {
-    background: #E6F4EA;
-    color: #219150;
-}
-
-.status-badge.score-medium {
-    background: #FFF9E6;
-    color: #B8860B;
-}
-
-.status-badge.score-low {
-    background: #FFF4E6;
-    color: #A65C00;
-}
-
-.status-badge.score-unknown {
-    background: #F2F2F2;
-    color: #888;
-}
-
-.status-badge i {
-    margin: 0;
-    font-size: 1.3em;
-    color: inherit;
-    vertical-align: middle;
-}
-
-.status-badge span {
-    margin-left: 0.5em;
-    font-size: 1em;
-    color: inherit;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-}
-
-.status-label {
-    font-size: 0.92rem;
-    color: #b0b0c3;
-    font-weight: 600;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 0;
-    line-height: 1.1;
-}
-
 .delete-btn {
-    margin-left: 12px;
-    align-self: flex-start;
-    background: #f6f8fa;
+    background: none;
     border: none;
     color: #b0b0c3;
-    font-size: 22px;
+    font-size: 20px;
     border-radius: 50%;
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
     transition: background 0.18s, color 0.18s, transform 0.18s;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 4px rgba(60, 60, 120, 0.06);
+    margin-left: 6px;
 }
 
 .delete-btn:hover {
@@ -343,47 +288,36 @@ function getScoreIcon(score: number | undefined) {
     transform: scale(1.08);
 }
 
-.delete-btn:before {
-    content: '\f2ed';
-    font-family: 'Font Awesome 5 Free', 'FontAwesome', Arial, sans-serif;
-    font-weight: 900;
-    font-size: 1.1em;
-}
-
-@media (max-width: 640px) {
-    .product-row {
-        flex-wrap: wrap;
-        gap: 10px;
+@media (max-width: 480px) {
+    .history-row {
+        gap: 6px;
+        padding: 8px 2px 8px 2px;
     }
 
-    .product-main-info {
-        min-width: 120px;
+    .history-img-wrap {
+        width: 38px;
+        height: 38px;
+        border-radius: 6px;
     }
 
-    .status-block {
-        min-width: 60px;
+    .history-title {
+        font-size: 0.99rem;
+    }
+
+    .history-brand {
+        font-size: 0.91rem;
+    }
+
+    .status-dot {
+        width: 8px;
+        height: 8px;
     }
 
     .delete-btn {
-        margin-left: 6px;
+        width: 26px;
+        height: 26px;
+        font-size: 16px;
+        margin-left: 2px;
     }
-}
-
-.status-badge i {
-    margin-right: 6px;
-    font-size: 1.2em;
-    vertical-align: middle;
-}
-
-.scan-date i {
-    margin-right: 6px;
-    font-size: 1em;
-    color: #b0b0c3;
-    vertical-align: middle;
-}
-
-.delete-btn i {
-    font-size: 1.1em;
-    vertical-align: middle;
 }
 </style>
