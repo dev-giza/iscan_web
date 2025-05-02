@@ -12,12 +12,6 @@
             </div>
         </div>
 
-        <div class="controls">
-            <NuxtLink to="/history" class="history-link">
-                История сканирований
-            </NuxtLink>
-        </div>
-
         <div v-if="error" class="error-message">
             {{ error }}
             <button @click="retryScanning" class="retry-button">Повторить</button>

@@ -169,8 +169,8 @@ function getStatusDotClass(score: number | undefined) {
 }
 
 .history-img-wrap {
-    width: 48px;
-    height: 48px;
+    width: 100px;
+    height: 100px;
     border-radius: 8px;
     overflow: hidden;
     background: #f6f8fa;
@@ -239,7 +239,7 @@ function getStatusDotClass(score: number | undefined) {
 }
 
 .dot-excellent {
-    background: #2196f3;
+    background: #18863b;
 }
 
 .dot-unknown {
@@ -295,8 +295,8 @@ function getStatusDotClass(score: number | undefined) {
     }
 
     .history-img-wrap {
-        width: 38px;
-        height: 38px;
+        width: 80px;
+        height: 80px;
         border-radius: 6px;
     }
 

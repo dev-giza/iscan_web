@@ -15,10 +15,13 @@
                     <div class="product-card-score-row">
                         <span class="score-dot-row"
                             :class="getScoreDotClass(typeof currentScan?.score === 'number' ? currentScan.score : undefined)"></span>
-                        <span class="score-numeric-row">{{ typeof currentScan?.score === 'number' ? currentScan.score :
-                            '—' }}/100</span>
-                        <span class="score-label-row">{{ getScoreLabel(typeof currentScan?.score === 'number' ?
-                            currentScan.score : undefined) }}</span>
+                        <span class="score-numeric-row"
+                            :class="getScoreTextClass(typeof currentScan?.score === 'number' ? currentScan.score : undefined)">{{
+                                typeof currentScan?.score === 'number' ? currentScan.score : '—' }}/100</span>
+                        <span class="score-label-row"
+                            :class="getScoreTextClass(typeof currentScan?.score === 'number' ? currentScan.score : undefined)">{{
+                                getScoreLabel(typeof currentScan?.score === 'number' ? currentScan.score : undefined)
+                            }}</span>
                     </div>
                     <div class="product-card-meta-row">
                         <span v-if="currentScan?.timestamp" class="meta-row"><i class="fa-regular fa-calendar"></i> {{
@@ -55,17 +58,25 @@
                     </div>
                 </div>
                 <div v-if="currentScan?.extra?.explanation_score" class="score-explanation-block">
-                    <i class="fa-regular fa-circle-question"></i>
+                    <b>
+                        <i class="fa-solid fa-circle-question"></i>
+                        Оценка
+                    </b>
                     <span>{{ currentScan.extra.explanation_score }}</span>
                 </div>
                 <div v-if="currentScan?.allergens" class="info-section allergens-section">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span><b>Аллергены:</b> {{ currentScan.allergens }}</span>
+                    <span><i class="fa-solid fa-triangle-exclamation"></i><b>Аллергены:</b></span>
+                    <div class="allergen-list">
+                        <span v-for="(allergen, idx) in allergenArray" :key="idx" class="allergen-item">
+                            <i :class="getAllergenIconClass(allergen)"></i>
+                            {{ allergen }}
+                        </span>
+                    </div>
                 </div>
                 <div v-if="currentScan?.extra?.harmful_components && currentScan.extra.harmful_components.length > 0"
                     class="info-section harmful-section">
                     <i class="fa-solid fa-skull-crossbones"></i>
-                    <span><b>Потенциально вредные компоненты:</b></span>
+                    <span><b>Потенциально вредные компоненты</b></span>
                 </div>
                 <div v-if="currentScan?.extra?.harmful_components && currentScan.extra.harmful_components.length > 0"
                     class="harmful-cards">
@@ -74,26 +85,21 @@
                         <div class="harmful-title">{{ component.name }}</div>
                         <div class="harmful-effect">{{ component.effect }}</div>
                         <div v-if="component.recommendation" class="harmful-recommend">{{ component.recommendation
-                        }}</div>
+                            }}</div>
                     </div>
-                </div>
-                <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
-                    class="info-section recommendations-section">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <span><b>Рекомендации:</b></span>
                 </div>
                 <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
                     class="recommend-cards">
                     <div v-if="currentScan.extra.recommendedfor" class="recommend-card">
-                        <div class="recommend-label">Рекомендуется для:</div>
+                        <div class="recommend-label"><i class="fa-solid fa-person"></i>Подходит</div>
                         <div class="recommend-value">{{ currentScan.extra.recommendedfor }}</div>
                     </div>
                     <div v-if="currentScan.extra.frequency" class="recommend-card">
-                        <div class="recommend-label">Частота:</div>
+                        <div class="recommend-label"><i class="fa-solid fa-wave-square"></i>Частота</div>
                         <div class="recommend-value">{{ currentScan.extra.frequency }}</div>
                     </div>
                     <div v-if="currentScan.extra.alternatives" class="recommend-card">
-                        <div class="recommend-label">Альтернативы:</div>
+                        <div class="recommend-label"><i class="fa-solid fa-clone"></i>Альтернативы</div>
                         <div class="recommend-value">{{ currentScan.extra.alternatives }}</div>
                     </div>
                 </div>
@@ -197,6 +203,46 @@ function getScoreDotClass(score: number | undefined) {
     if (score <= 75) return 'dot-good';
     return 'dot-excellent';
 }
+
+function getScoreTextClass(score: number | undefined) {
+    if (typeof score !== 'number') return 'score-text-unknown';
+    if (score <= 25) return 'score-text-bad';
+    if (score <= 50) return 'score-text-medium';
+    if (score <= 75) return 'score-text-good';
+    return 'score-text-excellent';
+}
+
+const allergenArray = computed(() =>
+    currentScan.value?.allergens
+        ? currentScan.value.allergens.split(',').map(a => a.trim())
+        : []
+);
+
+function getAllergenIconClass(allergen: string) {
+    const map: Record<string, string> = {
+        'молоко': 'fa-solid fa-cow',
+        'молочные продукты': 'fa-solid fa-cow',
+        'рыба': 'fa-solid fa-fish',
+        'орехи': 'fa-solid fa-seedling',
+        'арахис': 'fa-solid fa-peanut',
+        'яйцо': 'fa-solid fa-egg',
+        'яйца': 'fa-solid fa-egg',
+        'глютен': 'fa-solid fa-bread-slice',
+        'пшеница': 'fa-solid fa-bread-slice',
+        'соя': 'fa-solid fa-leaf',
+        'мед': 'fa-solid fa-jar',
+        'креветки': 'fa-solid fa-shrimp',
+        'ракообразные': 'fa-solid fa-shrimp',
+        'семена': 'fa-solid fa-seedling',
+        'кунжут': 'fa-solid fa-seedling',
+        'горчица': 'fa-solid fa-seedling',
+        'сельдерей': 'fa-solid fa-seedling',
+        'лук': 'fa-solid fa-onion',
+        'чеснок': 'fa-solid fa-onion',
+        // fallback
+    };
+    return map[allergen.toLowerCase()] || 'fa-solid fa-exclamation';
+}
 </script>
 
 <style scoped>
@@ -213,7 +259,7 @@ function getScoreDotClass(score: number | undefined) {
     justify-content: center;
     align-items: flex-start;
     padding: 32px 8px 32px 8px;
-    z-index: 1000;
+    z-index: 1001;
     overflow-y: auto;
     animation: modal-fade-in 0.35s cubic-bezier(.4, 0, .2, 1);
 }
@@ -395,8 +441,8 @@ function getScoreDotClass(score: number | undefined) {
 }
 
 .dot-excellent {
-    background: #2196f3;
-    box-shadow: 0 0 8px 2px #2196f333;
+    background: #18863b;
+    box-shadow: 0 0 8px 2px #18863b33;
 }
 
 .dot-unknown {
@@ -409,6 +455,11 @@ function getScoreDotClass(score: number | undefined) {
     color: #23233a;
     letter-spacing: 0.2px;
     animation: fade-in-card 0.9s cubic-bezier(.4, 0, .2, 1);
+}
+
+.allergens-section>span {
+    display: flex;
+    gap: 8px;
 }
 
 .health-score-value {
@@ -495,6 +546,7 @@ function getScoreDotClass(score: number | undefined) {
 
 .score-explanation-block {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
     gap: 8px;
     background: #f6f8fa;
@@ -508,6 +560,8 @@ function getScoreDotClass(score: number | undefined) {
 
 .info-section {
     display: flex;
+    flex-direction: column;
+    width: 95%;
     align-items: flex-start;
     gap: 10px;
     background: #f6f8fa;
@@ -542,12 +596,6 @@ function getScoreDotClass(score: number | undefined) {
     transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.harmful-card:hover,
-.recommend-card:hover {
-    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.13);
-    transform: translateY(-2px) scale(1.03);
-}
-
 .harmful-title {
     font-weight: 700;
     color: #dc3545;
@@ -564,9 +612,12 @@ function getScoreDotClass(score: number | undefined) {
 }
 
 .recommend-label {
+    display: flex;
+    gap: 8px;
     font-weight: 600;
-    color: #23233a;
+    color: #666;
     margin-bottom: 2px;
+    font-weight: bold;
 }
 
 .recommend-value {
@@ -589,21 +640,115 @@ function getScoreDotClass(score: number | undefined) {
     }
 
     .product-card {
-        padding: 0 6px;
+        padding: 0 4px;
+        align-items: center;
     }
 
-    .product-card-image {
-        width: 90px;
-        height: 90px;
-        border-radius: 12px;
+    .product-card-row {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 12px;
+        background: none;
+        box-shadow: none;
+        padding: 0 2px;
+        width: 100%;
+    }
+
+    .product-card-image-row {
+        width: auto;
+        min-width: 70px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        margin-bottom: 0;
+    }
+
+    .product-card-image-row-img {
+        width: 70px;
+        height: 70px;
+        border-radius: 10px;
+        margin-bottom: 0;
+        margin-top: 0;
+        box-shadow: 0 2px 8px rgba(60, 60, 120, 0.08);
+    }
+
+    .product-card-maininfo-row {
+        width: 100%;
+        margin: 0;
+        background: none;
+        border-radius: 0;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0;
+        gap: 2px;
+        margin-top: 0;
+    }
+
+    .product-card-title-row,
+    .product-card-brand-row,
+    .product-card-score-row,
+    .product-card-meta-row {
+        width: 100%;
+        text-align: left;
+    }
+
+    .product-card-title-row {
+        font-size: 1.02rem;
+        font-weight: 900;
+        margin-bottom: 2px;
+        word-break: break-word;
+    }
+
+    .product-card-brand-row {
+        font-size: 0.93rem;
+        color: #888;
+        margin-bottom: 0;
+    }
+
+    .product-card-score-row {
+        justify-content: flex-start;
+        margin: 6px 0 0 0;
+        gap: 6px;
+    }
+
+    .score-dot-row {
+        width: 10px;
+        height: 10px;
+    }
+
+    .score-numeric-row {
+        font-size: 0.97rem;
+    }
+
+    .score-label-row {
+        font-size: 0.93rem;
+        min-width: 32px;
+        text-align: left;
+    }
+
+    .product-card-meta-row {
+        justify-content: flex-start;
+        gap: 6px;
+    }
+
+    .meta-row {
+        justify-content: flex-start;
+        gap: 4px;
     }
 
     .product-card-content {
         gap: 10px;
+        align-items: center;
+        width: 100%;
+        padding: 0 2px;
     }
 
     .product-card-params-grid {
         gap: 8px 8px;
+        width: 100%;
     }
 
     .param-cell {
@@ -617,7 +762,7 @@ function getScoreDotClass(score: number | undefined) {
 
     .harmful-card,
     .recommend-card {
-        padding: 7px 8px;
+        padding: 10px;
         font-size: 0.95rem;
     }
 
@@ -637,7 +782,7 @@ function getScoreDotClass(score: number | undefined) {
     align-items: flex-start;
     gap: 18px;
     width: 100%;
-    padding: 0 0 0 0;
+    padding: 5px 15px;
     background: none;
     box-shadow: none;
     margin-top: 24px;
@@ -727,8 +872,8 @@ function getScoreDotClass(score: number | undefined) {
 }
 
 .dot-excellent {
-    background: #2196f3;
-    box-shadow: 0 0 8px 2px #2196f333;
+    background: #18863b;
+    box-shadow: 0 0 8px 2px #18863b33;
 }
 
 .dot-unknown {
@@ -767,29 +912,144 @@ function getScoreDotClass(score: number | undefined) {
 
 @media (max-width: 640px) {
     .product-card-row {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 10px;
         margin-top: 12px;
+        background: none;
+        box-shadow: none;
+        padding: 10px;
+        width: 100%;
+    }
+
+    .product-card-image-row {
+        width: auto;
+        min-width: 70px;
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        margin-bottom: 0;
     }
 
     .product-card-image-row-img {
-        width: 80px;
-        height: 80px;
-        border-radius: 12px;
+        width: 70px;
+        height: 70px;
+        border-radius: 10px;
+        margin-bottom: 0;
+        margin-top: 0;
+        box-shadow: 0 2px 8px rgba(60, 60, 120, 0.08);
+    }
+
+    .product-card-maininfo-row {
+        width: 100%;
+        margin: 0;
+        background: none;
+        border-radius: 0;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0;
+        gap: 2px;
+        margin-top: 0;
+    }
+
+    .product-card-title-row,
+    .product-card-brand-row,
+    .product-card-score-row,
+    .product-card-meta-row {
+        width: 100%;
+        text-align: left;
     }
 
     .product-card-title-row {
-        font-size: 1.08rem;
+        font-size: 1.02rem;
+        font-weight: 900;
+        margin-bottom: 2px;
+        word-break: break-word;
+    }
+
+    .product-card-brand-row {
+        font-size: 0.93rem;
+        color: #888;
+        margin-bottom: 0;
+    }
+
+    .product-card-score-row {
+        justify-content: flex-start;
+        margin: 6px 0 0 0;
+        gap: 6px;
     }
 
     .score-dot-row {
-        width: 12px;
-        height: 12px;
+        width: 10px;
+        height: 10px;
     }
 
     .score-numeric-row {
-        font-size: 1.01rem;
+        font-size: 0.97rem;
     }
+
+    .score-label-row {
+        font-size: 0.93rem;
+        min-width: 32px;
+        text-align: left;
+    }
+
+    .product-card-meta-row {
+        justify-content: flex-start;
+        gap: 6px;
+        font-size: 0.91rem;
+        margin: 4px 0 0 0;
+    }
+}
+
+.score-text-bad {
+    color: #e74c3c;
+    font-weight: 700;
+}
+
+.score-text-medium {
+    color: #ffb300;
+    font-weight: 700;
+}
+
+.score-text-good {
+    color: #4ec16e;
+    font-weight: 700;
+}
+
+.score-text-excellent {
+    color: #18863b;
+    font-weight: 700;
+}
+
+.score-text-unknown {
+    color: #bbb;
+    font-weight: 700;
+}
+
+.allergen-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 4px;
+}
+
+.allergen-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #f6f8fa;
+    border-radius: 8px;
+    padding: 4px 10px 4px 7px;
+    font-size: 0.97rem;
+    color: #b85c00;
+    font-weight: 600;
+}
+
+.allergen-item i {
+    font-size: 1.1em;
+    color: #b85c00;
 }
 </style>
