@@ -46,7 +46,9 @@ const history = computed(() => store.scanHistory)
 const modalRef = ref()
 
 onMounted(() => {
-    store.loadHistoryFromStorage()
+    if (!store.hasScanHistory) {
+        store.loadHistoryFromStorage()
+    }
 })
 
 const showDetails = (scan: any) => {

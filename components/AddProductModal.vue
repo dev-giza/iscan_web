@@ -48,7 +48,8 @@
     </div>
     <transition name="fade">
         <div v-if="showSentToast" class="sent-toast">
-            Данные отправлены! Они будут обработаны в ближайшее время.
+            <i class="fa-solid fa-circle-check"></i>
+            Данные отправлены! Они появяться в истории в ближайшее время.
         </div>
     </transition>
 </template>
@@ -134,17 +135,19 @@ const submitImages = async () => {
 
     isLoading.value = true;
     try {
-        // Отправляем полные base64 строки
         const images = [
             productImage.value,
             ingredientsImage.value
         ];
 
-        console.log('Sending images to server:', {
+        console.log('Отправляем на сервер:', {
             barcode: props.barcode,
             imagesCount: images.length,
             imagesSizes: images.map(img => Math.round(img.length / 1024) + 'KB')
         });
+
+        // Логируем историю до добавления
+        console.log('История ДО добавления:', store.scanHistory.map(x => x.barcode));
 
         const response = await $fetch('/api/update', {
             method: 'POST',
@@ -154,12 +157,12 @@ const submitImages = async () => {
             }
         });
 
-        if (!response) {
-            throw new Error('Ошибка при отправке изображений');
-        }
+        console.log('Ответ сервера:', response);
 
-        // Сохраняем данные в store
         store.setCurrentScan(response);
+
+        // Логируем историю после добавления
+        console.log('История ПОСЛЕ добавления:', store.scanHistory.map(x => x.barcode));
         emit('productAdded', response);
         close();
 
@@ -364,26 +367,37 @@ defineExpose({
 .sent-toast {
     position: fixed;
     left: 50%;
-    bottom: 32px;
+    top: 32px;
     transform: translateX(-50%);
     background: #23233a;
     color: #fff;
-    padding: 14px 28px;
-    border-radius: 12px;
-    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.13);
-    font-size: 1.08rem;
+    padding: 16px 32px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(60, 60, 120, 0.18);
+    font-size: 1.13rem;
     z-index: 2000;
-    opacity: 0.97;
+    opacity: 0.98;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.sent-toast i {
+    font-size: 1.3em;
+    color: #4ec16e;
 }
 
 .fade-enter-active,
 .fade-leave-active {
-    transition: opacity 0.4s;
+    transition: opacity 0.4s, top 0.4s;
 }
 
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
+    top: 0px;
 }
 </style>
