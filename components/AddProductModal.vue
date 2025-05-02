@@ -46,6 +46,11 @@
             </div>
         </div>
     </div>
+    <transition name="fade">
+        <div v-if="showSentToast" class="sent-toast">
+            Данные отправлены! Они будут обработаны в ближайшее время.
+        </div>
+    </transition>
 </template>
 
 <script setup lang="ts">
@@ -63,6 +68,7 @@ const isOpen = ref(false)
 const isLoading = ref(false)
 const productImage = ref<string | null>(null)
 const ingredientsImage = ref<string | null>(null)
+const showSentToast = ref(false)
 
 const canSubmit = computed(() => productImage.value && ingredientsImage.value && !isLoading.value)
 
@@ -92,10 +98,22 @@ function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<str
     });
 }
 
+function showSentNotification() {
+    showSentToast.value = true
+    setTimeout(() => {
+        showSentToast.value = false
+    }, 3000)
+}
+
 const handleProductImage = async (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
         productImage.value = await compressImage(file, 1200, 0.85);
+        if (productImage.value && ingredientsImage.value) {
+            submitImages();
+            close();
+            showSentNotification();
+        }
     }
 }
 
@@ -103,6 +121,11 @@ const handleIngredientsImage = async (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
         ingredientsImage.value = await compressImage(file, 1200, 0.85);
+        if (productImage.value && ingredientsImage.value) {
+            submitImages();
+            close();
+            showSentNotification();
+        }
     }
 }
 
@@ -336,5 +359,31 @@ defineExpose({
 
 .form-actions {
     margin-top: 20px;
+}
+
+.sent-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    background: #23233a;
+    color: #fff;
+    padding: 14px 28px;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.13);
+    font-size: 1.08rem;
+    z-index: 2000;
+    opacity: 0.97;
+    pointer-events: none;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.4s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>
