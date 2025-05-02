@@ -2,102 +2,101 @@
     <div v-if="isOpen" class="modal-overlay" @click="close">
         <div class="modal-card animated-modal" @click.stop>
             <button class="close-button" @click="close">&times;</button>
-            <div v-if="currentScan" class="product-card">
-                <div class="product-card-image-wrap">
+            <div v-if="currentScan" class="product-card product-card-row">
+                <div class="product-card-image-row">
                     <img v-if="currentScan?.image_front" :src="currentScan.image_front" :alt="currentScan.product_name"
-                        class="product-card-image" />
+                        class="product-card-image-row-img" />
                 </div>
-                <div class="product-card-content">
-                    <h2 class="product-card-title">{{ currentScan?.product_name || 'Без названия' }}</h2>
-                    <div class="product-card-date">
-                        <i class="fa-regular fa-calendar"></i>
-                        {{ formatRelativeDate(currentScan?.timestamp) }}
-                    </div>
-                    <div class="product-card-meta">
-                        <span v-if="currentScan?.barcode" class="meta-item">
-                            <i class="fa-solid fa-barcode"></i> {{ currentScan.barcode }}
-                        </span>
-                        <span v-if="currentScan?.manufacturer && currentScan.manufacturer !== 'null'" class="meta-item">
-                            <i class="fa-solid fa-industry"></i> {{ currentScan.manufacturer }}
-                        </span>
-                    </div>
-                    <div class="product-card-status">
-                        <span class="score-dot"
+                <div class="product-card-maininfo-row">
+                    <div class="product-card-title-row">{{ currentScan?.product_name || 'Без названия' }}</div>
+                    <div class="product-card-brand-row"
+                        v-if="currentScan?.manufacturer && currentScan.manufacturer !== 'null'">{{
+                            currentScan.manufacturer }}</div>
+                    <div class="product-card-score-row">
+                        <span class="score-dot-row"
                             :class="getScoreDotClass(typeof currentScan?.score === 'number' ? currentScan.score : undefined)"></span>
-                        <span class="health-score-numeric">{{ typeof currentScan?.score === 'number' ? currentScan.score
-                            : '—' }}/100</span>
-                        <span class="health-score-value">{{ getScoreLabel(typeof currentScan?.score === 'number' ?
+                        <span class="score-numeric-row">{{ typeof currentScan?.score === 'number' ? currentScan.score :
+                            '—' }}/100</span>
+                        <span class="score-label-row">{{ getScoreLabel(typeof currentScan?.score === 'number' ?
                             currentScan.score : undefined) }}</span>
                     </div>
-                    <div class="product-card-params-grid">
-                        <div class="param-cell param-calories">
-                            <i class="fa-solid fa-fire param-icon-calories"></i>
-                            <div class="param-value">{{ currentScan?.nutrition?.calories ?? '—' }}</div>
-                            <div class="param-label">Калории</div>
-                        </div>
-                        <div class="param-cell param-proteins">
-                            <i class="fa-solid fa-drumstick-bite param-icon-proteins"></i>
-                            <div class="param-value">{{ currentScan?.nutrition?.proteins ?? '—' }}</div>
-                            <div class="param-label">Белки</div>
-                        </div>
-                        <div class="param-cell param-fats">
-                            <i class="fa-solid fa-bacon param-icon-fats"></i>
-                            <div class="param-value">{{ currentScan?.nutrition?.fats ?? '—' }}</div>
-                            <div class="param-label">Жиры</div>
-                        </div>
-                        <div class="param-cell param-carbs">
-                            <i class="fa-solid fa-bread-slice param-icon-carbs"></i>
-                            <div class="param-value">{{ currentScan?.nutrition?.carbohydrates ?? '—' }}</div>
-                            <div class="param-label">Углеводы</div>
-                        </div>
-                    </div>
-                    <div v-if="currentScan?.extra?.explanation_score" class="score-explanation-block">
-                        <i class="fa-regular fa-circle-question"></i>
-                        <span>{{ currentScan.extra.explanation_score }}</span>
-                    </div>
-                    <div v-if="currentScan?.allergens" class="info-section allergens-section">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span><b>Аллергены:</b> {{ currentScan.allergens }}</span>
-                    </div>
-                    <div v-if="currentScan?.extra?.harmful_components && currentScan.extra.harmful_components.length > 0"
-                        class="info-section harmful-section">
-                        <i class="fa-solid fa-skull-crossbones"></i>
-                        <span><b>Потенциально вредные компоненты:</b></span>
-                    </div>
-                    <div v-if="currentScan?.extra?.harmful_components && currentScan.extra.harmful_components.length > 0"
-                        class="harmful-cards">
-                        <div class="harmful-card" v-for="(component, index) in currentScan.extra.harmful_components"
-                            :key="index">
-                            <div class="harmful-title">{{ component.name }}</div>
-                            <div class="harmful-effect">{{ component.effect }}</div>
-                            <div v-if="component.recommendation" class="harmful-recommend">{{ component.recommendation
-                            }}</div>
-                        </div>
-                    </div>
-                    <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
-                        class="info-section recommendations-section">
-                        <i class="fa-solid fa-lightbulb"></i>
-                        <span><b>Рекомендации:</b></span>
-                    </div>
-                    <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
-                        class="recommend-cards">
-                        <div v-if="currentScan.extra.recommendedfor" class="recommend-card">
-                            <div class="recommend-label">Рекомендуется для:</div>
-                            <div class="recommend-value">{{ currentScan.extra.recommendedfor }}</div>
-                        </div>
-                        <div v-if="currentScan.extra.frequency" class="recommend-card">
-                            <div class="recommend-label">Частота:</div>
-                            <div class="recommend-value">{{ currentScan.extra.frequency }}</div>
-                        </div>
-                        <div v-if="currentScan.extra.alternatives" class="recommend-card">
-                            <div class="recommend-label">Альтернативы:</div>
-                            <div class="recommend-value">{{ currentScan.extra.alternatives }}</div>
-                        </div>
+                    <div class="product-card-meta-row">
+                        <span v-if="currentScan?.timestamp" class="meta-row"><i class="fa-regular fa-calendar"></i> {{
+                            formatRelativeDate(currentScan?.timestamp) }}</span>
+                        <span v-if="currentScan?.barcode" class="meta-row"><i class="fa-solid fa-barcode"></i> {{
+                            currentScan.barcode }}</span>
                     </div>
                 </div>
             </div>
             <div v-else class="no-result">
                 Нет данных для отображения
+            </div>
+            <div class="product-card-content">
+                <div class="product-card-params-grid">
+                    <div class="param-cell param-calories">
+                        <i class="fa-solid fa-fire param-icon-calories"></i>
+                        <div class="param-value">{{ currentScan?.nutrition?.calories ?? '—' }}</div>
+                        <div class="param-label">Калории</div>
+                    </div>
+                    <div class="param-cell param-proteins">
+                        <i class="fa-solid fa-drumstick-bite param-icon-proteins"></i>
+                        <div class="param-value">{{ currentScan?.nutrition?.proteins ?? '—' }}</div>
+                        <div class="param-label">Белки</div>
+                    </div>
+                    <div class="param-cell param-fats">
+                        <i class="fa-solid fa-bacon param-icon-fats"></i>
+                        <div class="param-value">{{ currentScan?.nutrition?.fats ?? '—' }}</div>
+                        <div class="param-label">Жиры</div>
+                    </div>
+                    <div class="param-cell param-carbs">
+                        <i class="fa-solid fa-bread-slice param-icon-carbs"></i>
+                        <div class="param-value">{{ currentScan?.nutrition?.carbohydrates ?? '—' }}</div>
+                        <div class="param-label">Углеводы</div>
+                    </div>
+                </div>
+                <div v-if="currentScan?.extra?.explanation_score" class="score-explanation-block">
+                    <i class="fa-regular fa-circle-question"></i>
+                    <span>{{ currentScan.extra.explanation_score }}</span>
+                </div>
+                <div v-if="currentScan?.allergens" class="info-section allergens-section">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span><b>Аллергены:</b> {{ currentScan.allergens }}</span>
+                </div>
+                <div v-if="currentScan?.extra?.harmful_components && currentScan.extra.harmful_components.length > 0"
+                    class="info-section harmful-section">
+                    <i class="fa-solid fa-skull-crossbones"></i>
+                    <span><b>Потенциально вредные компоненты:</b></span>
+                </div>
+                <div v-if="currentScan?.extra?.harmful_components && currentScan.extra.harmful_components.length > 0"
+                    class="harmful-cards">
+                    <div class="harmful-card" v-for="(component, index) in currentScan.extra.harmful_components"
+                        :key="index">
+                        <div class="harmful-title">{{ component.name }}</div>
+                        <div class="harmful-effect">{{ component.effect }}</div>
+                        <div v-if="component.recommendation" class="harmful-recommend">{{ component.recommendation
+                            }}</div>
+                    </div>
+                </div>
+                <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
+                    class="info-section recommendations-section">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span><b>Рекомендации:</b></span>
+                </div>
+                <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
+                    class="recommend-cards">
+                    <div v-if="currentScan.extra.recommendedfor" class="recommend-card">
+                        <div class="recommend-label">Рекомендуется для:</div>
+                        <div class="recommend-value">{{ currentScan.extra.recommendedfor }}</div>
+                    </div>
+                    <div v-if="currentScan.extra.frequency" class="recommend-card">
+                        <div class="recommend-label">Частота:</div>
+                        <div class="recommend-value">{{ currentScan.extra.frequency }}</div>
+                    </div>
+                    <div v-if="currentScan.extra.alternatives" class="recommend-card">
+                        <div class="recommend-label">Альтернативы:</div>
+                        <div class="recommend-value">{{ currentScan.extra.alternatives }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -629,6 +628,168 @@ function getScoreDotClass(score: number | undefined) {
     .health-score-value {
         min-width: 40px;
         font-size: 0.95rem;
+    }
+}
+
+.product-card-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 18px;
+    width: 100%;
+    padding: 0 0 0 0;
+    background: none;
+    box-shadow: none;
+    margin-top: 24px;
+    margin-bottom: 10px;
+}
+
+.product-card-image-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.product-card-image-row-img {
+    width: 110px;
+    height: 110px;
+    border-radius: 18px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #f6f8fa 60%, #f3f6fb 100%);
+    box-shadow: 0 4px 18px rgba(60, 60, 120, 0.10), 0 1.5px 4px rgba(60, 60, 120, 0.04);
+    border: 1.5px solid #f3f6fb;
+    transition: box-shadow 0.2s, border 0.2s;
+    animation: fade-in-card 0.7s cubic-bezier(.4, 0, .2, 1);
+}
+
+.product-card-image-row-img:hover {
+    box-shadow: 0 8px 32px rgba(60, 60, 120, 0.16);
+    border: 1.5px solid #e0e7ff;
+}
+
+.product-card-maininfo-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 2px;
+    width: 100%;
+}
+
+.product-card-title-row {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #23233a;
+    margin: 0 0 2px 0;
+    letter-spacing: 0.01em;
+    line-height: 1.18;
+    text-align: left;
+}
+
+.product-card-brand-row {
+    font-size: 1.01rem;
+    color: #888;
+    margin-bottom: 0;
+    line-height: 1.1;
+    text-align: left;
+}
+
+.product-card-score-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 0 0;
+    justify-content: flex-start;
+}
+
+.score-dot-row {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px 2px rgba(76, 193, 110, 0.12);
+    transition: box-shadow 0.3s;
+}
+
+.dot-bad {
+    background: #e74c3c;
+    box-shadow: 0 0 8px 2px #e74c3c33;
+}
+
+.dot-medium {
+    background: #ffb300;
+    box-shadow: 0 0 8px 2px #ffb30033;
+}
+
+.dot-good {
+    background: #4ec16e;
+    box-shadow: 0 0 8px 2px #4ec16e33;
+}
+
+.dot-excellent {
+    background: #2196f3;
+    box-shadow: 0 0 8px 2px #2196f333;
+}
+
+.dot-unknown {
+    background: #bbb;
+}
+
+.score-numeric-row {
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #23233a;
+    letter-spacing: 0.2px;
+}
+
+.score-label-row {
+    font-size: 1.01rem;
+    font-weight: 700;
+    color: #888;
+    min-width: 70px;
+    text-align: right;
+}
+
+.product-card-meta-row {
+    display: flex;
+    gap: 14px;
+    justify-content: flex-start;
+    margin: 8px 0 0 0;
+    color: #b0b0c3;
+    font-size: 0.98rem;
+}
+
+.meta-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+@media (max-width: 640px) {
+    .product-card-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .product-card-image-row-img {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+    }
+
+    .product-card-title-row {
+        font-size: 1.08rem;
+    }
+
+    .score-dot-row {
+        width: 12px;
+        height: 12px;
+    }
+
+    .score-numeric-row {
+        font-size: 1.01rem;
     }
 }
 </style>
