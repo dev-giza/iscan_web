@@ -66,176 +66,25 @@ const ingredientsImage = ref<string | null>(null)
 
 const canSubmit = computed(() => productImage.value && ingredientsImage.value && !isLoading.value)
 
-interface CompressionOptions {
-    maxWidth: number;
-    maxHeight: number;
-    quality: number;
-}
-
-const compressImage = async (base64Image: string, isIngredients = false): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const img = new Image()
-        const canvas = document.createElement('canvas')
-
-        img.onerror = () => {
-            canvas.width = 0
-            canvas.height = 0
-            reject(new Error('Ошибка загрузки изображения'))
+const handleProductImage = (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (file) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            productImage.value = e.target?.result as string
         }
-
-        img.onload = () => {
-            try {
-                let width = img.width
-                let height = img.height
-
-                // Определяем параметры сжатия
-                const options: CompressionOptions = {
-                    maxWidth: isIngredients ? 1600 : 1200,
-                    maxHeight: isIngredients ? 1600 : 1200,
-                    quality: isIngredients ? 0.95 : 0.8
-                }
-
-                // Если изображение маленькое, повышаем качество
-                if (width * height < 800 * 800) {
-                    options.quality = Math.min(options.quality + 0.05, 0.95)
-                }
-
-                // Если изображение уже меньше максимальных размеров, не увеличиваем его
-                if (width <= options.maxWidth && height <= options.maxHeight) {
-                    width = img.width
-                    height = img.height
-                } else {
-                    // Calculate new dimensions while maintaining aspect ratio
-                    if (width > height) {
-                        if (width > options.maxWidth) {
-                            height = Math.round((height * options.maxWidth) / width)
-                            width = options.maxWidth
-                        }
-                    } else {
-                        if (height > options.maxHeight) {
-                            width = Math.round((width * options.maxHeight) / height)
-                            height = options.maxHeight
-                        }
-                    }
-                }
-
-                canvas.width = width
-                canvas.height = height
-                const ctx = canvas.getContext('2d')
-                if (!ctx) {
-                    throw new Error('Не удалось создать контекст canvas')
-                }
-                ctx.drawImage(img, 0, 0, width, height)
-
-                const compressedBase64 = canvas.toDataURL('image/jpeg', options.quality)
-
-                // Проверяем размер сжатого изображения
-                const compressedSize = Math.round((compressedBase64.length * 3) / 4)
-
-                // Если размер все еще слишком большой, пробуем сильнее сжать
-                if (compressedSize > 1024 * 1024) { // больше 1MB
-                    const newQuality = Math.max(0.6, options.quality - 0.1)
-                    const newCompressedBase64 = canvas.toDataURL('image/jpeg', newQuality)
-                    canvas.width = 0
-                    canvas.height = 0
-                    resolve(newCompressedBase64)
-                } else {
-                    canvas.width = 0
-                    canvas.height = 0
-                    resolve(compressedBase64)
-                }
-            } catch (error) {
-                canvas.width = 0
-                canvas.height = 0
-                reject(error)
-            }
-        }
-
-        img.src = base64Image
-    })
-}
-
-const handleProductImage = async (event: Event) => {
-    const input = event.target as HTMLInputElement
-    if (input.files && input.files[0]) {
-        const file = input.files[0]
-
-        // Проверяем тип файла
-        if (!file.type.startsWith('image/')) {
-            alert('Пожалуйста, выберите изображение')
-            return
-        }
-
-        // Проверяем размер файла
-        if (file.size > 10 * 1024 * 1024) { // больше 10MB
-            alert('Изображение слишком большое. Пожалуйста, выберите файл меньше 10MB.')
-            return
-        }
-
-        try {
-            isLoading.value = true
-            const reader = new FileReader()
-
-            reader.onerror = () => {
-                throw new Error('Ошибка чтения файла')
-            }
-
-            reader.onload = async (e) => {
-                if (e.target?.result) {
-                    const base64Image = e.target.result as string
-                    const compressedImage = await compressImage(base64Image, false)
-                    productImage.value = compressedImage
-                }
-            }
-            reader.readAsDataURL(file)
-        } catch (error) {
-            console.error('Error processing image:', error)
-            alert('Произошла ошибка при обработке изображения')
-        } finally {
-            isLoading.value = false
-        }
+        reader.readAsDataURL(file)
     }
 }
 
-const handleIngredientsImage = async (event: Event) => {
-    const input = event.target as HTMLInputElement
-    if (input.files && input.files[0]) {
-        const file = input.files[0]
-
-        // Проверяем тип файла
-        if (!file.type.startsWith('image/')) {
-            alert('Пожалуйста, выберите изображение')
-            return
+const handleIngredientsImage = (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (file) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            ingredientsImage.value = e.target?.result as string
         }
-
-        // Проверяем размер файла
-        if (file.size > 10 * 1024 * 1024) { // больше 10MB
-            alert('Изображение слишком большое. Пожалуйста, выберите файл меньше 10MB.')
-            return
-        }
-
-        try {
-            isLoading.value = true
-            const reader = new FileReader()
-
-            reader.onerror = () => {
-                throw new Error('Ошибка чтения файла')
-            }
-
-            reader.onload = async (e) => {
-                if (e.target?.result) {
-                    const base64Image = e.target.result as string
-                    const compressedImage = await compressImage(base64Image, true)
-                    ingredientsImage.value = compressedImage
-                }
-            }
-            reader.readAsDataURL(file)
-        } catch (error) {
-            console.error('Error processing image:', error)
-            alert('Произошла ошибка при обработке изображения')
-        } finally {
-            isLoading.value = false
-        }
+        reader.readAsDataURL(file)
     }
 }
 
@@ -286,7 +135,6 @@ const open = () => {
 }
 
 const close = () => {
-    if (isLoading.value) return;
     isOpen.value = false
     productImage.value = null
     ingredientsImage.value = null

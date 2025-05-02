@@ -33,6 +33,7 @@ interface ScanResult {
   extra?: ExtraInfo;
   image_front?: string;
   image_ingredients?: string;
+  timestamp?: number;
 }
 
 interface ScanState {
@@ -47,6 +48,7 @@ type ScanStoreActions = {
   clearCurrentScan(): void;
   fetchProductData(barcode: string): Promise<void>;
   loadHistoryFromStorage(): void;
+  removeFromHistory(barcode: string): void;
 };
 
 type ScanStoreGetters = {
@@ -82,7 +84,7 @@ export const useScanStore = defineStore<
 >("scan", {
   state: (): ScanState => ({
     currentScan: null,
-    scanHistory: loadHistory(), // Загружаем историю при инициализации store
+    scanHistory: [], // История подгружается только на клиенте через loadHistoryFromStorage
     isLoading: false,
     error: null,
   }),
@@ -109,6 +111,7 @@ export const useScanStore = defineStore<
           extra: scan.extra,
           image_front: scan.image_front,
           image_ingredients: scan.image_ingredients,
+          timestamp: scan.timestamp || Date.now(),
         };
 
         const exists = this.scanHistory.some(
@@ -150,6 +153,16 @@ export const useScanStore = defineStore<
       } finally {
         this.isLoading = false;
       }
+    },
+
+    /**
+     * Удаляет продукт из истории по штрихкоду
+     */
+    removeFromHistory(barcode: string) {
+      this.scanHistory = this.scanHistory.filter(
+        (item) => item.barcode !== barcode
+      );
+      saveHistory(this.scanHistory);
     },
   },
 });

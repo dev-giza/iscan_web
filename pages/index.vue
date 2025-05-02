@@ -24,9 +24,10 @@
         </div>
 
         <LoadingOverlay v-if="loadingText" :text="loadingText" />
-        <ScanModal ref="modalRef" @close="restartScanning" />
+        <LoadingOverlay v-if="isCameraLoading" text="Загрузка камеры..." />
+        <ScanModal ref="modalRef" @close="restartScanning" @recalculate="onRecalculate" />
         <AddProductModal ref="addProductModalRef" :barcode="currentBarcode" @productAdded="handleProductAdded"
-            @close="restartScanning" />
+            @close="onAddProductModalClose" />
     </div>
 </template>
 
@@ -36,7 +37,7 @@ import { useScanStore } from '~/stores/scan'
 import Quagga from '@ericblade/quagga2'
 import LoadingOverlay from '~/components/LoadingOverlay.vue'
 
-const video = ref(null)
+const video = ref<HTMLVideoElement | null>(null)
 const isScanning = ref(false)
 const error = ref('')
 const modalRef = ref()
@@ -44,6 +45,7 @@ const addProductModalRef = ref()
 const isProcessingBarcode = ref(false)
 const currentBarcode = ref('')
 const loadingText = ref('')
+const isCameraLoading = ref(false)
 
 // Добавляем новые переменные для валидации сканирования
 const lastScannedBarcode = ref('')
@@ -52,6 +54,11 @@ const scanStartTime = ref(0)
 const MIN_SCAN_TIME = 1000 // Минимальное время сканирования в мс
 const MIN_SCAN_ATTEMPTS = 3 // Минимальное количество попыток
 const MAX_SCAN_ATTEMPTS = 6 // Максимальное количество попыток
+
+// Для устойчивого сканирования: подряд 5 одинаковых — только тогда отправлять
+const lastBarcode = ref('')
+const consecutiveCount = ref(0)
+const CONSECUTIVE_THRESHOLD = 5
 
 const store = useScanStore()
 
@@ -64,13 +71,14 @@ const startScanning = async () => {
         lastScannedBarcode.value = ''
         scanAttempts.value = 0
         scanStartTime.value = Date.now()
+        isCameraLoading.value = true
 
         // Инициализируем Quagga
         Quagga.init({
             inputStream: {
                 name: "Live",
                 type: "LiveStream",
-                target: document.querySelector("#interactive"),
+                target: document.querySelector("#interactive") as Element,
                 constraints: {
                     facingMode: "environment",
                     aspectRatio: { min: 1, max: 2 },
@@ -95,41 +103,27 @@ const startScanning = async () => {
                 ],
                 debug: {
                     drawBoundingBox: true,
-                    showPattern: true,
-                    showCanvas: true
+                    showPattern: true
                 },
                 multiple: false,
-                frequency: 10,
-                patternTimeout: 100
             },
             locate: true,
             locator: {
                 halfSample: true,
                 patchSize: "medium",
-                debug: {
-                    showCanvas: true,
-                    showPatches: true,
-                    showFoundPatches: true,
-                    showSkeleton: true,
-                    showLabels: true,
-                    showPatchLabels: true,
-                    showRemainingPatchLabels: true,
-                    boxFromPatches: {
-                        showTransformed: true,
-                        showTransformedBox: true,
-                        showBB: true
-                    }
-                }
+                debug: {}
             }
         }, function (err) {
             if (err) {
                 console.error('Quagga initialization error:', err)
                 error.value = 'Ошибка инициализации сканера'
                 isScanning.value = false
+                isCameraLoading.value = false
                 return
             }
 
             console.log('Quagga initialized successfully')
+            isCameraLoading.value = false
             Quagga.start()
         })
 
@@ -153,6 +147,23 @@ const startScanning = async () => {
                 console.log('Scan time too short:', scanTime)
                 return
             }
+
+            // Новый устойчивый механизм: подряд 5 одинаковых
+            if (barcode === lastBarcode.value) {
+                consecutiveCount.value++
+                console.log('Same barcode in a row:', consecutiveCount.value, barcode)
+            } else {
+                lastBarcode.value = barcode
+                consecutiveCount.value = 1
+                console.log('New barcode sequence, resetting count:', barcode)
+            }
+            if (consecutiveCount.value < CONSECUTIVE_THRESHOLD) {
+                console.log('Waiting for stable consecutive barcode, count:', consecutiveCount.value, 'barcode:', barcode)
+                return
+            }
+            // Достигли порога — сбрасываем счётчик и продолжаем
+            consecutiveCount.value = 0
+            lastBarcode.value = ''
 
             // Проверяем, совпадает ли текущий баркод с предыдущим
             if (barcode === lastScannedBarcode.value) {
@@ -213,10 +224,11 @@ const stopScanning = async () => {
 
         // Останавливаем видео поток
         if (video.value) {
-            const stream = video.value.srcObject as MediaStream
+            const v = video.value as HTMLVideoElement
+            const stream = v.srcObject as MediaStream | null
             if (stream) {
                 stream.getTracks().forEach(track => track.stop())
-                video.value.srcObject = null
+                v.srcObject = null
             }
         }
 
@@ -225,6 +237,9 @@ const stopScanning = async () => {
         lastScannedBarcode.value = ''
         scanAttempts.value = 0
         scanStartTime.value = 0
+        lastBarcode.value = ''
+        consecutiveCount.value = 0
+        isCameraLoading.value = false
     } catch (err) {
         console.error('Error stopping scanner:', err)
     }
@@ -237,12 +252,19 @@ const retryScanning = () => {
 
 const handleProductAdded = (productData: any) => {
     console.log('Product added successfully:', productData);
-    // Останавливаем сканирование
-    stopScanning();
-    // Сохраняем данные в store
+    // Просто сохраняем продукт, не открываем ScanModal здесь
     store.setCurrentScan(productData);
-    // Показываем модальное окно с деталями продукта
-    modalRef.value?.open();
+    // Явно закрываем AddProductModal через ref
+    addProductModalRef.value?.close();
+}
+
+const onAddProductModalClose = () => {
+    // Если есть текущий продукт — открываем ScanModal
+    if (store.currentScan) {
+        modalRef.value?.open();
+    } else {
+        restartScanning();
+    }
 }
 
 const restartScanning = async () => {
@@ -267,6 +289,13 @@ const restartScanning = async () => {
     } catch (err) {
         console.error('Error restarting scanner:', err)
         error.value = 'Ошибка перезапуска сканера'
+    }
+}
+
+function onRecalculate(barcode) {
+    if (barcode) {
+        currentBarcode.value = barcode;
+        addProductModalRef.value?.open();
     }
 }
 

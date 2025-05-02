@@ -13,6 +13,9 @@ useHead({
     { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover' },
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
     { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }
+  ],
+  script: [
+    { src: 'https://kit.fontawesome.com/092469c598.js', crossorigin: 'anonymous' }
   ]
 })
 </script>

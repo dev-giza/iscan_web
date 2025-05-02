@@ -1,19 +1,11 @@
 <template>
     <nav class="bottom-nav">
         <NuxtLink to="/" class="nav-item" :class="{ active: route.path === '/' }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
+            <i class="fa-solid fa-barcode"></i>
             <span>Сканер</span>
         </NuxtLink>
         <NuxtLink to="/history" class="nav-item" :class="{ active: route.path === '/history' }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
+            <i class="fa-solid fa-clock-rotate-left"></i>
             <span>История</span>
         </NuxtLink>
     </nav>
@@ -47,6 +39,7 @@ const route = useRoute()
     color: rgba(255, 255, 255, 0.7);
     transition: all 0.3s ease;
     padding: 8px 16px;
+    font-weight: bold;
 }
 
 .nav-item svg {
@@ -56,10 +49,7 @@ const route = useRoute()
     stroke: currentColor;
 }
 
-.nav-item span {
-    font-size: 12px;
-    font-weight: 500;
-}
+
 
 .nav-item.active {
     color: #fff;
