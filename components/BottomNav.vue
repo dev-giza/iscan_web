@@ -4,7 +4,7 @@
             <i class="fa-solid fa-barcode"></i>
             <span>Сканер</span>
         </NuxtLink>
-        <NuxtLink to="/search" class="nav-item" :class="{ active: route.path === '/search' }">
+        <NuxtLink to="/find" class="nav-item" :class="{ active: route.path === '/search' }">
             <i class="fa-solid fa-search"></i>
             <span>Поиск</span>
         </NuxtLink>
