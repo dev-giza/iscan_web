@@ -4,6 +4,10 @@
             <i class="fa-solid fa-barcode"></i>
             <span>Сканер</span>
         </NuxtLink>
+        <NuxtLink to="/search" class="nav-item" :class="{ active: route.path === '/search' }">
+            <i class="fa-solid fa-search"></i>
+            <span>Поиск</span>
+        </NuxtLink>
         <NuxtLink to="/history" class="nav-item" :class="{ active: route.path === '/history' }">
             <i class="fa-solid fa-clock-rotate-left"></i>
             <span>История</span>
@@ -48,8 +52,6 @@ const route = useRoute()
     margin-bottom: 4px;
     stroke: currentColor;
 }
-
-
 
 .nav-item.active {
     color: #fff;
