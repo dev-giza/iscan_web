@@ -92,34 +92,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAsyncData } from '#app'
 import { useHead } from '#imports'
 
 const route = useRoute()
 const barcode = computed(() => route.params.barcode as string)
-const loading = ref(true)
-const product = ref<any>(null)
 
-const fetchProduct = async () => {
-    loading.value = true
-    try {
-        // Исправлено: теперь правильный эндпоинт
-        const res = await fetch(`/api/find/${barcode.value}`)
-        if (res.ok) {
-            product.value = await res.json()
-        } else {
-            product.value = null
-        }
-    } catch (e) {
-        product.value = null
-    }
-    loading.value = false
-}
-
-onMounted(() => {
-    fetchProduct()
-})
+const { data: product, pending: loading, error } = await useAsyncData(
+    'product',
+    () => $fetch(`/api/find/${barcode.value}`)
+)
 
 // SEO: динамические мета-теги
 watch([product, loading], () => {
