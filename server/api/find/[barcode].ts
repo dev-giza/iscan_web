@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const url = `https://iscan.store/find/${barcode}`;
+  const url = `https://iscan.store/find/${barcode}?x_api_key=${process.env.API_SECRET_KEY}`;
 
   const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
@@ -44,11 +44,11 @@ export default defineEventHandler(async (event) => {
         Accept: "application/json",
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "x-api-key": process.env.API_SECRET_KEY,
       },
       httpsAgent,
     });
 
-    console.log("API Response:", response.data);
     return response.data;
   } catch (error: any) {
     console.error("API Error:", {
@@ -56,12 +56,22 @@ export default defineEventHandler(async (event) => {
       url: url,
       response: error?.response?.data,
       status: error?.response?.status,
+      headers: error?.response?.headers,
+      full: error,
     });
     throw createError({
       statusCode: error?.response?.status || 500,
-      message: `Failed to fetch product data: ${
-        error?.message || "Unknown error"
-      }`,
+      message: (() => {
+        const data = error?.response?.data;
+        if (Array.isArray(data?.detail)) {
+          return data.detail
+            .map((d: any) => d.msg || JSON.stringify(d))
+            .join("; ");
+        }
+        return (
+          data?.message || data?.detail || error?.message || "Unknown error"
+        );
+      })(),
     });
   }
 });

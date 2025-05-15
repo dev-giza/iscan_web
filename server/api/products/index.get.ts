@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
         Accept: "application/json",
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "x-api-key": process.env.API_SECRET_KEY,
       },
       httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     });

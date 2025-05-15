@@ -140,22 +140,18 @@ export default defineEventHandler(async (event) => {
     console.log("Preparing request data:", {
       barcode,
       imagesCount: images.length,
-      requestURL: `https://iscan.store/update?barcode=${barcode}`,
+      requestURL: `https://iscan.store/update/${barcode}?x_api_key=${process.env.API_SECRET_KEY}`,
     });
 
     console.log("Sending update request to iscan.store with barcode:", barcode);
-    const response = await axios.post(
-      `https://iscan.store/update?barcode=${barcode}`,
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        },
-        httpsAgent,
-      }
-    );
+    const url = `https://iscan.store/update/${barcode}?x_api_key=${process.env.API_SECRET_KEY}`;
+    const response = await axios.post(url, formData, {
+      headers: {
+        ...formData.getHeaders(),
+        accept: "application/json",
+      },
+      httpsAgent,
+    });
 
     console.log("Update API Response:", response.data);
     return response.data;

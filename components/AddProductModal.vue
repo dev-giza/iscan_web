@@ -1,6 +1,7 @@
 <template>
     <div v-if="isOpen" class="modal-overlay" @click="close">
         <div class="modal-content" @click.stop>
+            <div v-if="isLoading" class="progress-bar-top"></div>
             <button class="close-button" @click="close" :disabled="isLoading">&times;</button>
 
             <div class="add-product-form">
@@ -57,6 +58,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useScanStore } from '~/stores/scan'
+import { useUiStore } from '~/stores/ui'
 
 const props = defineProps<{
     barcode: string
@@ -64,6 +66,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['productAdded', 'close'])
 const store = useScanStore()
+const uiStore = useUiStore()
 
 const isOpen = ref(false)
 const isLoading = ref(false)
@@ -134,6 +137,7 @@ const submitImages = async () => {
     if (!productImage.value || !ingredientsImage.value) return;
 
     isLoading.value = true;
+    uiStore.showGlobalLoading();
     try {
         const images = [
             productImage.value,
@@ -171,6 +175,7 @@ const submitImages = async () => {
         alert('Произошла ошибка при отправке изображений. Пожалуйста, попробуйте еще раз.');
     } finally {
         isLoading.value = false;
+        uiStore.hideGlobalLoading();
     }
 }
 
@@ -399,5 +404,27 @@ defineExpose({
 .fade-leave-to {
     opacity: 0;
     top: 0px;
+}
+
+.progress-bar-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4ec16e 0%, #18863b 100%);
+    animation: progress-bar-anim 1.2s linear infinite;
+    z-index: 1002;
+    border-radius: 4px 4px 0 0;
+}
+
+@keyframes progress-bar-anim {
+    0% {
+        width: 0;
+    }
+
+    100% {
+        width: 100vw;
+    }
 }
 </style>

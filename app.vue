@@ -1,5 +1,6 @@
 <template>
   <div class="app-container">
+    <ProgressBar />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
@@ -8,6 +9,8 @@
 </template>
 
 <script setup>
+import ProgressBar from '~/components/ProgressBar.vue'
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover' },

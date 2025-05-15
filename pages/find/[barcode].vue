@@ -7,7 +7,21 @@
                 <img v-if="product.image_front" :src="product.image_front" :alt="product.product_name"
                     class="product-card-image" />
             </div>
-            <div class="product-card-title">{{ product.product_name || 'Без названия' }}</div>
+            <div class="product-card-title">
+                {{ product.product_name || 'Без названия' }}
+                <span v-if="product.status === 'verified'">
+                    <i class="fa-solid fa-check-circle" style="color: #28a745; margin-left: 6px;"
+                        title="Продукт получен с официальных источников"></i>
+                </span>
+                <span v-else-if="product.status === 'pending'">
+                    <i class="fa-solid fa-hourglass-half" style="color: #ffc107; margin-left: 6px;"
+                        title="Продукт на проверке"></i>
+                </span>
+                <span v-else-if="product.status">
+                    <i class="fa-solid fa-question-circle" style="color: #bbb; margin-left: 6px;"
+                        :title="product.status"></i>
+                </span>
+            </div>
             <div class="product-card-brand" v-if="product.manufacturer && product.manufacturer !== 'null'">{{
                 product.manufacturer }}</div>
             <div class="product-card-score">
@@ -15,7 +29,7 @@
                 <span class="health-score-numeric" :class="getScoreTextClass(product.score)">{{ typeof product.score ===
                     'number' ? product.score : '—' }}/100</span>
                 <span class="score-label" :class="getScoreTextClass(product.score)">{{ getScoreLabel(product.score)
-                    }}</span>
+                }}</span>
             </div>
             <div class="product-card-meta">
                 <span v-if="product.barcode"><i class="fa-solid fa-barcode"></i> {{ product.barcode }}</span>
@@ -86,16 +100,38 @@
                         <div class="recommend-value">{{ product.extra.alternatives }}</div>
                     </div>
                 </div>
+                <!-- Описание продукта -->
+                <div v-if="product.extra?.description" class="info-section description-section">
+                    <b><i class="fa-solid fa-info-circle"></i> Описание:</b>
+                    <div class="description-text">{{ product.extra.description }}</div>
+                </div>
+                <!-- Категория -->
+                <div v-if="product.extra?.category_name" class="info-section category-section">
+                    <b><i class="fa-solid fa-tag"></i> Категория:</b>
+                    <span>{{ product.extra.category_name }}</span>
+                </div>
+                <!-- Состав -->
+                <div v-if="product.extra?.ingredients" class="info-section ingredients-section">
+                    <b><i class="fa-solid fa-list"></i> Состав:</b>
+                    <span>{{ product.extra.ingredients }}</span>
+                </div>
+
+                <!-- Теги -->
+                <div v-if="product.tags && product.tags.length" class="info-section tags-section">
+                    <b><i class="fa-solid fa-tags"></i> Теги:</b>
+                    <span class="tag-item" v-for="(tag, idx) in product.tags" :key="idx">{{ tag }}</span>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAsyncData } from '#app'
 import { useHead } from '#imports'
+import { useScanStore } from '~/stores/scan'
 
 const route = useRoute()
 const barcode = computed(() => route.params.barcode as string)
@@ -104,6 +140,8 @@ const { data: product, pending: loading, error } = await useAsyncData(
     'product',
     () => $fetch(`/api/find/${barcode.value}`)
 )
+
+const scanStore = useScanStore()
 
 // SEO: динамические мета-теги
 watch([product, loading], () => {
@@ -191,6 +229,12 @@ function getAllergenIconClass(allergen: string) {
     };
     return map[allergen.toLowerCase()] || 'fa-solid fa-exclamation';
 }
+
+onMounted(() => {
+    if (product.value) {
+        scanStore.setCurrentScan(product.value)
+    }
+})
 </script>
 
 <style scoped>

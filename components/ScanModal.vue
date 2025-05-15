@@ -4,11 +4,25 @@
             <button class="close-button" @click="close">&times;</button>
             <div v-if="currentScan" class="product-card product-card-row">
                 <div class="product-card-image-row">
-                    <img v-if="currentScan?.image_front" :src="currentScan.image_front" :alt="currentScan.product_name"
-                        class="product-card-image-row-img" />
+                    <img v-if="currentScan?.image_ingredients" :src="currentScan.image_ingredients"
+                        :alt="currentScan.product_name" class="product-card-image-row-img" />
                 </div>
                 <div class="product-card-maininfo-row">
-                    <div class="product-card-title-row">{{ currentScan?.product_name || 'Без названия' }}</div>
+                    <div class="product-card-title-row">
+                        {{ currentScan?.product_name || 'Без названия' }}
+                        <span v-if="currentScan?.status === 'verified'">
+                            <i class="fa-solid fa-check-circle" style="color: #28a745; margin-left: 6px;"
+                                title="Продукт получен с официальных источников"></i>
+                        </span>
+                        <span v-else-if="currentScan?.status === 'pending'">
+                            <i class="fa-solid fa-hourglass-half" style="color: #ffc107; margin-left: 6px;"
+                                title="Продукт на проверке"></i>
+                        </span>
+                        <span v-else-if="currentScan?.status">
+                            <i class="fa-solid fa-question-circle" style="color: #bbb; margin-left: 6px;"
+                                :title="currentScan.status"></i>
+                        </span>
+                    </div>
                     <div class="product-card-brand-row"
                         v-if="currentScan?.manufacturer && currentScan.manufacturer !== 'null'">{{
                             currentScan.manufacturer }}</div>
@@ -84,8 +98,18 @@
                         :key="index">
                         <div class="harmful-title">{{ component.name }}</div>
                         <div class="harmful-effect">{{ component.effect }}</div>
-                        <div v-if="component.recommendation" class="harmful-recommend">{{ component.recommendation
-                            }}</div>
+                        <div v-if="component.level || component.risk_group || component.severity"
+                            class="harmful-details">
+                            <div v-if="component.level" class="harmful-detail-row"><i class="fa-solid fa-signal"
+                                    style="color:#e67e22;"></i> <b>Уровень:</b> {{ component.level }}</div>
+                            <div v-if="component.risk_group" class="harmful-detail-row"><i class="fa-solid fa-users"
+                                    style="color:#6c63ff;"></i> <b>Группа риска:</b> {{ component.risk_group }}</div>
+                            <div v-if="component.severity" class="harmful-detail-row"><i
+                                    class="fa-solid fa-exclamation-triangle" style="color:#dc3545;"></i> <b>Степень:</b>
+                                {{ component.severity }}</div>
+                        </div>
+                        <div v-if="component.recommendation" class="harmful-recommend">{{ component.recommendation }}
+                        </div>
                     </div>
                 </div>
                 <div v-if="currentScan?.extra && (currentScan.extra.recommendedfor || currentScan.extra.frequency || currentScan.extra.alternatives)"
@@ -1051,5 +1075,20 @@ function getAllergenIconClass(allergen: string) {
 .allergen-item i {
     font-size: 1.1em;
     color: #b85c00;
+}
+
+.harmful-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 6px 0 0 0;
+}
+
+.harmful-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.97rem;
+    color: #555;
 }
 </style>

@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const url = `https://iscan.store/update?barcode=${barcode}`;
+    const url = `https://iscan.store/update/${barcode}?x_api_key=${process.env.API_SECRET_KEY}`;
     const httpsAgent = new https.Agent({
       rejectUnauthorized: false,
     });
@@ -74,8 +74,7 @@ export default defineEventHandler(async (event) => {
     const response = await axios.post(url, requestData, {
       headers: {
         "Content-Type": `multipart/form-data; boundary=${boundary}`,
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        accept: "application/json",
       },
       httpsAgent,
       maxBodyLength: Infinity,

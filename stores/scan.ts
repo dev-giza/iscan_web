@@ -12,6 +12,9 @@ interface HarmfulComponent {
   name: string;
   effect: string;
   recommendation: string;
+  level?: string;
+  risk_group?: string;
+  severity?: string;
 }
 
 interface ExtraInfo {
@@ -34,6 +37,7 @@ interface ScanResult {
   image_front?: string;
   image_ingredients?: string;
   timestamp?: number;
+  status?: string;
 }
 
 interface ScanState {
@@ -112,6 +116,7 @@ export const useScanStore = defineStore<
           image_front: scan.image_front,
           image_ingredients: scan.image_ingredients,
           timestamp: scan.timestamp || Date.now(),
+          status: scan.status,
         };
 
         const exists = this.scanHistory.some(
